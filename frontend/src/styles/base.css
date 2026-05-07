@@ -1,0 +1,351 @@
+/* ============================================
+   App shell
+   ============================================ */
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 0;
+  background: var(--app-bg);
+}
+
+/* ============================================
+   Sidebar
+   ============================================ */
+.sidebar {
+  height: 100%;
+  padding: 20px;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+}
+
+/* Shared surface styles — Apple card aesthetic */
+.sidebar-brand,
+.sidebar-nav,
+.sidebar-overview,
+.screen-page,
+.panel,
+.metric-card,
+.overview-item,
+.dish-card,
+.cart-item,
+.empty-card,
+.note-box,
+.bill-box,
+.admin-dish-card,
+.mix-row,
+.recent-order-card,
+.modal-card,
+.category-card,
+.mini-metric-card {
+  border: 1px solid var(--border-dark);
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.sidebar-brand,
+.sidebar-overview,
+.screen-page,
+.panel,
+.modal-card {
+  border-radius: var(--radius-xl);
+}
+
+/* Text color defaults */
+.sidebar-brand h1,
+.page-header h2,
+.panel-head h3,
+.admin-action-row h3,
+.metric-card strong,
+.mini-metric-card strong,
+.dish-copy h4,
+.cart-item h4,
+.admin-dish-copy h4,
+.category-card h3 {
+  color: var(--text);
+  letter-spacing: 0;
+}
+
+.sidebar-brand p,
+.overview-item span,
+.metric-card span,
+.metric-card small,
+.panel-head small,
+.recent-order-card p,
+.admin-dish-copy p,
+.category-card p,
+.empty-card p {
+  color: var(--muted);
+}
+
+/* ============================================
+   Sidebar brand
+   ============================================ */
+.sidebar-brand,
+.sidebar-overview {
+  padding: 18px;
+}
+
+.sidebar-brand h1 {
+  margin: 10px 0 0;
+  font-size: var(--text-5xl);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-brand p {
+  margin: 8px 0 0;
+  font-size: var(--text-sm);
+}
+
+/* ============================================
+   Eyebrow / Section label — Apple pill style
+   ============================================ */
+.eyebrow,
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(22, 143, 127, 0.1);
+  color: var(--teal);
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  font-size: var(--text-xs);
+}
+
+/* ============================================
+   Sidebar navigation
+   ============================================ */
+.sidebar-nav {
+  padding: 8px;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: var(--radius-md);
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+  text-decoration: none;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.nav-item span {
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.nav-item small {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.nav-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-md);
+}
+
+.nav-item.active {
+  background: var(--teal);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(22, 143, 127, 0.28);
+  border-radius: var(--radius-md);
+}
+
+.nav-item.active span,
+.nav-item.active small {
+  color: #fff;
+}
+
+/* ============================================
+   Sidebar overview
+   ============================================ */
+.sidebar-overview {
+  align-self: end;
+}
+
+.sidebar-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sidebar-section-head h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-lg);
+}
+
+.sidebar-section-head span {
+  color: var(--muted);
+  font-size: var(--text-base);
+}
+
+.overview-list {
+  display: grid;
+  gap: 8px;
+}
+
+.overview-item {
+  padding: 12px 14px;
+  border-radius: 8px;
+  box-shadow: none;
+  background: var(--surface-soft);
+}
+
+.overview-item span {
+  display: block;
+  font-size: var(--text-sm);
+}
+
+.overview-item strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--text);
+  font-size: var(--text-md);
+}
+
+/* ============================================
+   Workspace
+   ============================================ */
+.workspace {
+  height: 100%;
+  padding: 20px;
+  overflow: auto;
+}
+
+/* ============================================
+   Screen page (base)
+   ============================================ */
+.screen-page {
+  min-height: calc(100dvh - 32px);
+  height: 100%;
+  padding: 20px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: page-in var(--transition-slow) both;
+}
+
+.customer-page {
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+}
+
+.admin-page {
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+}
+
+/* ============================================
+   Page header
+   ============================================ */
+.page-header,
+.panel-head,
+.admin-action-row,
+.modal-head,
+.modal-footer,
+.category-card-main,
+.category-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.page-header {
+  margin-bottom: 14px;
+}
+
+.page-header h2 {
+  margin: 4px 0 0;
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.header-copy h2 {
+  margin: 12px 0 0;
+  color: var(--text);
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.04;
+}
+
+.header-copy p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: var(--text-base);
+}
+
+.header-metrics {
+  display: grid;
+  gap: 12px;
+}
+
+.customer-header .header-metrics {
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+}
+
+.admin-header .header-metrics {
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+}
+
+/* ============================================
+   Toast / Error / Loading banners
+   ============================================ */
+.toast-banner {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  z-index: 60;
+  transform: translateX(-50%);
+  width: fit-content;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  background: rgba(80, 68, 76, 0.94);
+  animation: toast-in 0.26s ease both;
+}
+
+.error-banner,
+.loading-panel {
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  color: var(--muted);
+  border: 1px solid rgba(237, 224, 219, 0.95);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 42px rgba(195, 176, 171, 0.12);
+}

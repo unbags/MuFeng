@@ -1,0 +1,446 @@
+/* ============================================
+   Page body layouts
+   ============================================ */
+.page-body {
+  min-height: 0;
+  display: grid;
+  gap: 20px;
+}
+
+.customer-body {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.admin-body {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.compact-admin-body {
+  grid-template-columns: minmax(0, 1fr) 310px;
+}
+
+/* ============================================
+   Panel layouts
+   ============================================ */
+.panel {
+  min-height: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.menu-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-content: stretch;
+  overflow: hidden;
+  padding: 2px;
+}
+
+.menu-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panel-head.compact {
+  align-items: center;
+}
+
+.panel-head h3 {
+  margin: 10px 0 0;
+  color: var(--text);
+  font-size: var(--text-4xl);
+}
+
+/* ============================================
+   Cart panel
+   ============================================ */
+.cart-panel,
+.admin-side {
+  min-height: 0;
+}
+
+.cart-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.cart-scroll-area {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+  margin-right: -6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cart-scroll-area::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   Admin layout
+   ============================================ */
+.admin-products-panel {
+  min-height: 0;
+}
+
+.compact-admin-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.admin-toolbar {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-overview-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-action-row h3 {
+  margin: 10px 0 0;
+  color: var(--text);
+  font-size: var(--text-4xl);
+}
+
+.admin-grid-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+  margin-right: -6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-grid-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.compact-admin-side {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  padding: 12px;
+}
+
+.admin-side-scroll {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px;
+}
+
+/* ============================================
+   Metric strip
+   ============================================ */
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+/* ============================================
+   Dashboard grid
+   ============================================ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: 16px;
+}
+
+.dashboard-orders {
+  grid-column: 1 / -1;
+}
+
+.dashboard-chart-main {
+  overflow: hidden;
+}
+
+.dashboard-side-stack {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 0.78fr);
+  gap: 12px;
+  overflow: hidden;
+}
+
+.dashboard-compact-card {
+  min-height: 0;
+  padding: 14px;
+  gap: 12px;
+  overflow: hidden;
+}
+
+/* ============================================
+   Checkout layout
+   ============================================ */
+.checkout-modal {
+  width: min(1080px, calc(100vw - 36px));
+  max-height: calc(100dvh - 36px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.checkout-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 14px;
+}
+
+.checkout-items-panel,
+.checkout-summary-panel,
+.editor-field-group,
+.dish-editor-preview {
+  min-height: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.checkout-summary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checkout-actions {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 10px;
+}
+
+.checkout-actions.single {
+  grid-template-columns: 1fr;
+}
+
+/* ============================================
+   Dish editor layout
+   ============================================ */
+.dish-editor-modal {
+  width: min(880px, calc(100vw - 36px));
+  max-height: calc(100dvh - 36px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.dish-editor-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 12px;
+  overflow: hidden;
+}
+
+.dish-editor-fields {
+  min-height: 0;
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+/* ============================================
+   Order detail layout
+   ============================================ */
+.order-detail-modal {
+  width: min(980px, calc(100vw - 36px));
+}
+
+.order-detail-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 14px;
+}
+
+.order-detail-loading {
+  min-height: 320px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.order-detail-loading .skeleton-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.order-detail-items {
+  max-height: min(430px, calc(100dvh - 260px));
+}
+
+.order-detail-item-row {
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+}
+
+.order-detail-meta {
+  display: grid;
+  gap: 10px;
+}
+
+/* ============================================
+   Summary stack layouts
+   ============================================ */
+.summary-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summary-stack.compact {
+  gap: 8px;
+}
+
+.summary-stack.inline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* ============================================
+   Recent orders panel
+   ============================================ */
+.recent-orders-panel {
+  padding: 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(239, 224, 219, 0.95);
+  background: linear-gradient(180deg, #fffdfc, #fff8f4);
+}
+
+.recent-orders-panel.expanded {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.recent-orders-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+  margin-right: -6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.recent-orders-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.side-panel {
+  min-height: 0;
+}
+
+/* ============================================
+   Dish grid
+   ============================================ */
+.dish-grid,
+.admin-dish-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+
+.dish-grid-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+  margin-right: -6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dish-grid-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================
+   Category manager grid
+   ============================================ */
+.category-manager-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ============================================
+   Skeleton screen layout
+   ============================================ */
+.skeleton-screen {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ============================================
+   Sidebar footer / logout
+   ============================================ */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.logout-btn:hover {
+  color: var(--coral);
+  border-color: var(--coral);
+  background: var(--coral-soft);
+}

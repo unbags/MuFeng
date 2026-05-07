@@ -1,0 +1,208 @@
+/* ============================================
+   Customer page theme & overrides
+   ============================================ */
+.customer-page {
+  --order-accent: #168f7f;
+  --order-accent-strong: #0d6f63;
+  --order-accent-soft: #e8f5f2;
+  --order-accent-glow: rgba(22, 143, 127, 0.22);
+  --order-accent-faint: rgba(22, 143, 127, 0.1);
+  --order-panel: #fff;
+  --order-card: #fff;
+  background: var(--app-bg);
+}
+
+.customer-page.order-takeout {
+  --order-accent: #f06f5f;
+  --order-accent-strong: #d94b3d;
+  --order-accent-soft: #fff0ee;
+  --order-accent-glow: rgba(240, 111, 95, 0.24);
+  --order-accent-faint: rgba(240, 111, 95, 0.12);
+}
+
+/* Panel surfaces — match dashboard cards */
+.customer-page .panel,
+.customer-page .dish-card,
+.customer-page .cart-item,
+.customer-page .empty-card,
+.customer-page .note-box,
+.customer-page .bill-box,
+.customer-page .checkout-items-panel,
+.customer-page .checkout-summary-panel,
+.customer-page .checkout-bill,
+.customer-page .receipt-panel,
+.customer-page .success-total-card {
+  border-color: var(--border-dark);
+  background: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.customer-page .menu-panel,
+.customer-page .cart-panel {
+  background: #fff;
+}
+
+/* Accent-colored elements */
+.customer-page .section-label,
+.customer-page .cart-badge,
+.customer-page .checkout-item-media,
+.customer-page .success-total-card {
+  background: var(--order-accent-soft);
+  color: var(--order-accent-strong);
+}
+
+/* Switch group */
+.customer-page .switch-group.compact {
+  padding: 4px;
+  border: 1px solid var(--border-dark);
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.04);
+  box-shadow: none;
+}
+
+.customer-page .switch-btn {
+  min-width: 76px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.customer-page .switch-btn.dine-in.active,
+.customer-page.order-dine-in .switch-btn.active {
+  background: var(--teal);
+  color: #fff;
+  box-shadow: var(--shadow-teal);
+}
+
+.customer-page .switch-btn.takeout.active,
+.customer-page.order-takeout .switch-btn.active {
+  background: var(--coral);
+  color: #fff;
+  box-shadow: var(--shadow-button);
+}
+
+/* Filter chips */
+.customer-page .filter-chip {
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--muted);
+}
+
+/* Primary actions */
+.customer-page .filter-chip.active,
+.customer-page .page-chip.active,
+.customer-page .primary-btn,
+.customer-page .checkout-btn,
+.customer-page .qty-btn:not(.subtle),
+.customer-page .success-icon {
+  border-color: transparent;
+  background: var(--order-accent);
+  color: #fff;
+  box-shadow: 0 4px 14px var(--order-accent-glow);
+}
+
+.customer-page .primary-btn:hover,
+.customer-page .checkout-btn:hover {
+  box-shadow: 0 6px 20px var(--order-accent-glow);
+  transform: translateY(-1px);
+}
+
+/* Ghost / subtle buttons */
+.customer-page .ghost-btn,
+.customer-page .qty-btn.subtle {
+  color: var(--order-accent-strong);
+  background: transparent;
+  border-color: var(--border-dark);
+}
+
+/* Dish cards */
+.customer-page .dish-card {
+  background: var(--order-card);
+  transition:
+    transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-color 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.customer-page .dish-card:hover {
+  border-color: var(--teal);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.customer-page .dish-cover,
+.customer-page .dish-placeholder,
+.customer-page .checkout-item-media {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 34%),
+    linear-gradient(135deg, var(--order-accent-soft), rgba(255, 255, 255, 0.9));
+}
+
+/* Typography */
+.customer-page .dish-placeholder strong,
+.customer-page .dish-copy h4,
+.customer-page .cart-item h4,
+.customer-page .checkout-item-copy strong {
+  color: var(--text);
+}
+
+.customer-page .dish-footer strong,
+.customer-page .cart-actions strong,
+.customer-page .checkout-total strong,
+.customer-page .success-total-card strong {
+  color: var(--order-accent-strong);
+}
+
+.customer-page .bill-row.total,
+.customer-page .checkout-total {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Focus states */
+.customer-page .note-box textarea:focus,
+.customer-page .checkout-note textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(22, 143, 127, 0.12);
+}
+
+/* Modals — Apple frosted glass */
+.customer-page .modal-mask {
+  background: rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.customer-page .modal-card {
+  border: 1px solid var(--border-dark);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-modal);
+}
+
+.customer-page .close-btn {
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+}
+
+.customer-page .close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text);
+}
+
+/* Prevent outer page scrolling — inner panels handle their own scroll */
+.customer-shell .workspace {
+  overflow: hidden;
+}
+
+.customer-page .checkout-item-scroll,
+.customer-page .compact-success {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.customer-page .checkout-item-scroll::-webkit-scrollbar,
+.customer-page .compact-success::-webkit-scrollbar {
+  display: none;
+}

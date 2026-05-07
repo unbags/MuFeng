@@ -1,0 +1,528 @@
+package com.example.ordering.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.ordering.domain.Category;
+import com.example.ordering.domain.CustomerOrder;
+import com.example.ordering.domain.Dish;
+import com.example.ordering.domain.OrderItem;
+import com.example.ordering.dto.AdminCategoryRequest;
+import com.example.ordering.dto.AdminDashboardResponse;
+import com.example.ordering.dto.AdminDishRequest;
+import com.example.ordering.dto.AdminDishResponse;
+import com.example.ordering.dto.CategoryResponse;
+import com.example.ordering.dto.ProductSalesItem;
+import com.example.ordering.dto.OrderDetailItemResponse;
+import com.example.ordering.dto.OrderDetailResponse;
+import com.example.ordering.dto.OrderSummaryResponse;
+import com.example.ordering.enums.OrderStatus;
+import com.example.ordering.mapper.CategoryMapper;
+import com.example.ordering.mapper.CustomerOrderMapper;
+import com.example.ordering.mapper.DishMapper;
+import com.example.ordering.mapper.OrderItemMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import com.example.ordering.dto.PageResponse;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+public class AdminService {
+
+    private final DishMapper dishMapper;
+    private final CategoryMapper categoryMapper;
+    private final CustomerOrderMapper customerOrderMapper;
+    private final OrderItemMapper orderItemMapper;
+    private final MenuService menuService;
+    private final SnowflakeIdGenerator idGenerator;
+    private final NotificationService notificationService;
+    private final Path imageRoot;
+
+    public AdminService(
+        DishMapper dishMapper,
+        CategoryMapper categoryMapper,
+        CustomerOrderMapper customerOrderMapper,
+        OrderItemMapper orderItemMapper,
+        MenuService menuService,
+        SnowflakeIdGenerator idGenerator,
+        NotificationService notificationService,
+        @Value("${app.storage.image-dir:src/main/resources/images}") String imageDir
+    ) {
+        this.dishMapper = dishMapper;
+        this.categoryMapper = categoryMapper;
+        this.customerOrderMapper = customerOrderMapper;
+        this.orderItemMapper = orderItemMapper;
+        this.menuService = menuService;
+        this.idGenerator = idGenerator;
+        this.notificationService = notificationService;
+        this.imageRoot = Paths.get(imageDir).toAbsolutePath().normalize();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> getCategories() {
+        return listCategories().stream().map(this::toCategoryResponse).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public CategoryResponse createCategory(AdminCategoryRequest request) {
+        String label = request.getLabel().trim();
+        String id = buildCategoryId(label);
+        if (categoryMapper.selectById(id) != null) {
+            throw new IllegalArgumentException("分类已存在");
+        }
+
+        Category category = new Category();
+        category.setId(id);
+        category.setLabel(label);
+        category.setSortOrder(request.getSortOrder());
+        categoryMapper.insert(category);
+        menuService.invalidateMenuCache();
+        return toCategoryResponse(categoryMapper.selectById(id));
+    }
+
+    @Transactional
+    public CategoryResponse updateCategory(String categoryId, AdminCategoryRequest request) {
+        Category category = getCategoryOrThrow(categoryId);
+        category.setLabel(request.getLabel().trim());
+        category.setSortOrder(request.getSortOrder());
+        categoryMapper.updateById(category);
+        menuService.invalidateMenuCache();
+        return toCategoryResponse(categoryMapper.selectById(category.getId()));
+    }
+
+    @Transactional
+    public void deleteCategory(String categoryId) {
+        Category category = getCategoryOrThrow(categoryId);
+        if ("all".equalsIgnoreCase(category.getId())) {
+            throw new IllegalArgumentException("默认分类不能删除");
+        }
+
+        Long dishCount = dishMapper.selectCount(
+            new LambdaQueryWrapper<Dish>()
+                .eq(Dish::getCategoryId, category.getId())
+                .eq(Dish::getDeleted, 0)
+        );
+        if (dishCount != null && dishCount > 0) {
+            throw new IllegalArgumentException("该分类下仍有商品，请先调整商品后再删除");
+        }
+
+        reassignDeletedDishesBeforeCategoryDelete(category.getId());
+        categoryMapper.deleteById(category.getId());
+        menuService.invalidateMenuCache();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminDishResponse> getDishes() {
+        Map<String, String> categoryLabels = buildCategoryLabelMap();
+        return dishMapper.selectList(
+            new LambdaQueryWrapper<Dish>()
+                .eq(Dish::getDeleted, 0)
+                .orderByAsc(Dish::getId)
+        ).stream().map(dish -> toAdminDishResponse(dish, categoryLabels)).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<OrderSummaryResponse> getOrders(int page, int size) {
+        int safePage = Math.max(1, page);
+        int safeSize = Math.min(Math.max(1, size), 100);
+        Page<CustomerOrder> pageParam = new Page<>(safePage, safeSize);
+        Page<CustomerOrder> resultPage = customerOrderMapper.selectPage(pageParam,
+            new LambdaQueryWrapper<CustomerOrder>().orderByDesc(CustomerOrder::getCreatedAt));
+
+        List<OrderSummaryResponse> items = resultPage.getRecords().stream()
+            .map(this::toOrderSummaryResponse)
+            .collect(Collectors.toList());
+
+        return new PageResponse<>(items, resultPage.getTotal(), resultPage.getCurrent(), resultPage.getSize());
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDetailResponse getOrderDetail(String orderNo) {
+        CustomerOrder order = customerOrderMapper.selectOne(
+            new LambdaQueryWrapper<CustomerOrder>().eq(CustomerOrder::getOrderNo, orderNo).last("limit 1")
+        );
+        if (order == null) {
+            throw new IllegalArgumentException("订单不存在");
+        }
+
+        List<OrderDetailItemResponse> items = orderItemMapper.selectList(
+            new LambdaQueryWrapper<OrderItem>()
+                .eq(OrderItem::getOrderId, order.getId())
+                .orderByAsc(OrderItem::getId)
+        ).stream().map(this::toOrderDetailItemResponse).collect(Collectors.toList());
+
+        OrderDetailResponse response = new OrderDetailResponse();
+        response.setOrderNo(order.getOrderNo());
+        response.setOrderType(order.getOrderType());
+        response.setStatus(order.getStatus());
+        response.setNote(order.getNote());
+        response.setItemCount(order.getItemCount());
+        response.setSubtotal(order.getSubtotal());
+        response.setPackageFee(order.getPackageFee());
+        response.setDeliveryFee(order.getDeliveryFee());
+        response.setTotalAmount(order.getTotalAmount());
+        response.setCreatedAt(order.getCreatedAt());
+        response.setUpdatedAt(order.getUpdatedAt());
+        response.setItems(items);
+        return response;
+    }
+
+    @Transactional
+    public OrderDetailResponse updateOrderStatus(String orderNo, String newStatus) {
+        CustomerOrder order = customerOrderMapper.selectOne(
+            new LambdaQueryWrapper<CustomerOrder>().eq(CustomerOrder::getOrderNo, orderNo).last("limit 1")
+        );
+        if (order == null) {
+            throw new IllegalArgumentException("订单不存在");
+        }
+
+        OrderStatus current = OrderStatus.fromString(order.getStatus());
+        OrderStatus target = OrderStatus.fromString(newStatus);
+
+        if (!current.canTransitionTo(target)) {
+            throw new IllegalArgumentException("订单状态不能从 " + current.name() + " 变更为 " + target.name());
+        }
+
+        order.setStatus(target.name());
+        customerOrderMapper.updateById(order);
+        OrderDetailResponse updatedOrder = getOrderDetail(orderNo);
+        notificationService.notifyOrderStatusChanged(updatedOrder);
+        return updatedOrder;
+    }
+
+    @Transactional(readOnly = true)
+    public AdminDashboardResponse getDashboard() {
+        BigDecimal totalRevenue = customerOrderMapper.sumTotalRevenue();
+        if (totalRevenue == null) {
+            totalRevenue = BigDecimal.ZERO;
+        }
+
+        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        BigDecimal todayRevenue = customerOrderMapper.sumTodayRevenue(todayStart);
+        if (todayRevenue == null) {
+            todayRevenue = BigDecimal.ZERO;
+        }
+
+        Integer todayOrderCount = customerOrderMapper.countTodayOrders(todayStart);
+        if (todayOrderCount == null) {
+            todayOrderCount = 0;
+        }
+
+        Long availableDishCount = dishMapper.selectCount(
+            new LambdaQueryWrapper<Dish>().eq(Dish::getDeleted, 0).eq(Dish::getAvailable, Boolean.TRUE)
+        );
+        Long unavailableDishCount = dishMapper.selectCount(
+            new LambdaQueryWrapper<Dish>().eq(Dish::getDeleted, 0).eq(Dish::getAvailable, Boolean.FALSE)
+        );
+
+        AdminDashboardResponse response = new AdminDashboardResponse();
+        response.setTotalRevenue(totalRevenue);
+        response.setTodayRevenue(todayRevenue);
+        response.setTodayOrderCount(todayOrderCount);
+        response.setAvailableDishCount(availableDishCount == null ? 0L : availableDishCount);
+        response.setUnavailableDishCount(unavailableDishCount == null ? 0L : unavailableDishCount);
+        return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductSalesItem> getProductSales(String range) {
+        int days;
+        switch (range != null ? range.toLowerCase() : "week") {
+            case "month":
+                days = 30;
+                break;
+            case "year":
+                days = 365;
+                break;
+            default:
+                days = 7;
+                break;
+        }
+
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(days);
+
+        List<CustomerOrder> orders = customerOrderMapper.selectList(
+            new LambdaQueryWrapper<CustomerOrder>()
+                .ge(CustomerOrder::getCreatedAt, cutoff)
+        );
+
+        if (orders.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Long> orderIds = orders.stream()
+            .map(CustomerOrder::getId)
+            .collect(Collectors.toList());
+
+        List<OrderItem> items = orderItemMapper.selectList(
+            new LambdaQueryWrapper<OrderItem>()
+                .in(OrderItem::getOrderId, orderIds)
+        );
+
+        return items.stream()
+            .collect(Collectors.toMap(
+                OrderItem::getDishId,
+                item -> new ProductSalesItem(item.getDishId(), item.getDishName(), item.getQuantity(), item.getLineTotal()),
+                (a, b) -> {
+                    a.setQuantity(a.getQuantity() + b.getQuantity());
+                    a.setRevenue(a.getRevenue().add(b.getRevenue()));
+                    return a;
+                }
+            ))
+            .values()
+            .stream()
+            .sorted((a, b) -> b.getQuantity().compareTo(a.getQuantity()))
+            .collect(Collectors.toList());
+    }
+
+    public String uploadDishImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("请选择图片文件");
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("图片大小不能超过五兆");
+        }
+
+        String originalName = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
+        String extension = originalName.contains(".") ? originalName.substring(originalName.lastIndexOf('.')) : "";
+        if (!Arrays.asList(".png", ".jpg", ".jpeg", ".webp").contains(extension)) {
+            throw new IllegalArgumentException("仅支持常见图片格式上传");
+        }
+
+        // Validate magic bytes
+        byte[] header = new byte[8];
+        try (InputStream is = file.getInputStream()) {
+            int bytesRead = is.read(header);
+            if (bytesRead < 3) {
+                throw new IllegalArgumentException("不支持的文件类型");
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException("无法读取文件");
+        }
+
+        boolean isPng = header[0] == (byte) 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47;
+        boolean isJpeg = header[0] == (byte) 0xFF && header[1] == (byte) 0xD8 && header[2] == (byte) 0xFF;
+        boolean isWebp = header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46;
+
+        if (!isPng && !isJpeg && !isWebp) {
+            throw new IllegalArgumentException("不支持的文件类型");
+        }
+
+        // Validate as a readable image
+        try (InputStream is = file.getInputStream()) {
+            BufferedImage image = ImageIO.read(is);
+            if (image == null) {
+                throw new IllegalArgumentException("无效的图片文件");
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException("无效的图片文件");
+        }
+
+        try {
+            Files.createDirectories(imageRoot);
+            String safeExtension = isPng ? ".png" : isJpeg ? ".jpg" : ".webp";
+            String fileName = UUID.randomUUID().toString().replace("-", "") + safeExtension;
+            Path target = imageRoot.resolve(fileName);
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            return "/images/" + fileName;
+        } catch (IOException exception) {
+            throw new IllegalStateException("图片保存失败", exception);
+        }
+    }
+
+    @Transactional
+    public AdminDishResponse createDish(AdminDishRequest request) {
+        validateCategory(request.getCategoryId());
+        Dish dish = new Dish();
+        dish.setId(idGenerator.nextId());
+        applyDishRequest(dish, request);
+        dish.setDeleted(0);
+        dishMapper.insert(dish);
+        menuService.invalidateMenuCache();
+        return toAdminDishResponse(dishMapper.selectById(dish.getId()), buildCategoryLabelMap());
+    }
+
+    @Transactional
+    public AdminDishResponse updateDish(Long dishId, AdminDishRequest request) {
+        validateCategory(request.getCategoryId());
+        Dish dish = getDishOrThrow(dishId);
+        applyDishRequest(dish, request);
+        dishMapper.updateById(dish);
+        menuService.invalidateMenuCache();
+        return toAdminDishResponse(dishMapper.selectById(dishId), buildCategoryLabelMap());
+    }
+
+    @Transactional
+    public AdminDishResponse updateAvailability(Long dishId, Boolean available) {
+        if (available == null) {
+            throw new IllegalArgumentException("上下架状态不能为空");
+        }
+        Dish dish = getDishOrThrow(dishId);
+        dish.setAvailable(available);
+        dishMapper.updateById(dish);
+        menuService.invalidateMenuCache();
+        return toAdminDishResponse(dishMapper.selectById(dishId), buildCategoryLabelMap());
+    }
+
+    @Transactional
+    public void deleteDish(Long dishId) {
+        Dish dish = getDishOrThrow(dishId);
+        dish.setAvailable(Boolean.FALSE);
+        dishMapper.updateById(dish);
+        dishMapper.deleteById(dishId);
+        menuService.invalidateMenuCache();
+    }
+
+    private void applyDishRequest(Dish dish, AdminDishRequest request) {
+        dish.setName(request.getName().trim());
+        dish.setCategoryId(request.getCategoryId().trim());
+        dish.setPrice(request.getPrice());
+        dish.setRating(request.getRating());
+        dish.setCalories(request.getCalories());
+        dish.setDescription(request.getDescription().trim());
+        dish.setHighlight(request.getHighlight().trim());
+        dish.setImageUrl(request.getImageUrl() == null || request.getImageUrl().trim().isEmpty()
+            ? null
+            : request.getImageUrl().trim());
+        dish.setAvailable(request.getAvailable());
+        dish.setStock(request.getStock() == null ? -1 : request.getStock());
+        if (dish.getDeleted() == null) {
+            dish.setDeleted(0);
+        }
+    }
+
+    private Dish getDishOrThrow(Long dishId) {
+        Dish dish = dishMapper.selectOne(
+            new LambdaQueryWrapper<Dish>()
+                .eq(Dish::getId, dishId)
+                .eq(Dish::getDeleted, 0)
+                .last("limit 1")
+        );
+        if (dish == null) {
+            throw new IllegalArgumentException("商品不存在");
+        }
+        return dish;
+    }
+
+    private void validateCategory(String categoryId) {
+        if (categoryId == null || categoryId.trim().isEmpty() || "all".equalsIgnoreCase(categoryId.trim())) {
+            throw new IllegalArgumentException("分类不存在");
+        }
+        Category category = categoryMapper.selectById(categoryId.trim());
+        if (category == null) {
+            throw new IllegalArgumentException("分类不存在");
+        }
+    }
+
+    private Map<String, String> buildCategoryLabelMap() {
+        return listCategories().stream()
+            .collect(Collectors.toMap(Category::getId, Category::getLabel, (left, right) -> left, HashMap::new));
+    }
+
+    private void reassignDeletedDishesBeforeCategoryDelete(String categoryId) {
+        String fallbackCategoryId = listCategories().stream()
+            .map(Category::getId)
+            .filter(id -> !categoryId.equals(id))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("至少保留一个分类"));
+
+        dishMapper.reassignDeletedDishesCategory(categoryId, fallbackCategoryId);
+    }
+
+    private List<Category> listCategories() {
+        return categoryMapper.selectList(new LambdaQueryWrapper<Category>().orderByAsc(Category::getSortOrder, Category::getId));
+    }
+
+    private Category getCategoryOrThrow(String categoryId) {
+        if (categoryId == null || categoryId.trim().isEmpty()) {
+            throw new IllegalArgumentException("分类不存在");
+        }
+        Category category = categoryMapper.selectById(categoryId.trim());
+        if (category == null) {
+            throw new IllegalArgumentException("分类不存在");
+        }
+        return category;
+    }
+
+    private String buildCategoryId(String label) {
+        String base = label.toLowerCase()
+            .replaceAll("[^a-z0-9\\u4e00-\\u9fa5]+", "-")
+            .replaceAll("^-|-$", "");
+        if (base.isEmpty()) {
+            base = "category";
+        }
+        String id = base.length() > 28 ? base.substring(0, 28) : base;
+        String candidate = id;
+        int index = 2;
+        while (categoryMapper.selectById(candidate) != null) {
+            String suffix = "-" + index;
+            int maxBaseLength = Math.max(1, 32 - suffix.length());
+            candidate = id.substring(0, Math.min(id.length(), maxBaseLength)) + suffix;
+            index += 1;
+        }
+        return candidate;
+    }
+
+    private CategoryResponse toCategoryResponse(Category category) {
+        return new CategoryResponse(category.getId(), category.getLabel(), category.getSortOrder());
+    }
+
+    private AdminDishResponse toAdminDishResponse(Dish dish, Map<String, String> categoryLabelMap) {
+        AdminDishResponse response = new AdminDishResponse();
+        response.setId(dish.getId());
+        response.setName(dish.getName());
+        response.setCategoryId(dish.getCategoryId());
+        response.setCategoryLabel(categoryLabelMap.getOrDefault(dish.getCategoryId(), dish.getCategoryId()));
+        response.setPrice(dish.getPrice());
+        response.setRating(dish.getRating());
+        response.setCalories(dish.getCalories());
+        response.setDescription(dish.getDescription());
+        response.setHighlight(dish.getHighlight());
+        response.setImageUrl(dish.getImageUrl());
+        response.setAvailable(Boolean.TRUE.equals(dish.getAvailable()));
+        response.setStock(dish.getStock());
+        return response;
+    }
+
+    private OrderSummaryResponse toOrderSummaryResponse(CustomerOrder order) {
+        OrderSummaryResponse response = new OrderSummaryResponse();
+        response.setOrderNo(order.getOrderNo());
+        response.setOrderType(order.getOrderType());
+        response.setStatus(order.getStatus());
+        response.setItemCount(order.getItemCount());
+        response.setTotalAmount(order.getTotalAmount());
+        response.setCreatedAt(order.getCreatedAt());
+        return response;
+    }
+
+    private OrderDetailItemResponse toOrderDetailItemResponse(OrderItem item) {
+        OrderDetailItemResponse response = new OrderDetailItemResponse();
+        response.setDishId(item.getDishId());
+        response.setName(item.getDishName());
+        response.setPrice(item.getDishPrice());
+        response.setQuantity(item.getQuantity());
+        response.setTotal(item.getLineTotal());
+        return response;
+    }
+}

@@ -1,0 +1,237 @@
+/* ============================================
+   @media (max-width: 1280px)
+   Dashboard re-layout at intermediate width
+   ============================================ */
+@media (max-width: 1280px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(250px, 0.8fr);
+    grid-template-rows: minmax(0, 1fr) minmax(230px, 0.62fr);
+  }
+
+  .dashboard-chart-main {
+    grid-row: 1 / -1;
+  }
+
+  .dashboard-side-stack {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .dashboard-orders {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+/* ============================================
+   @media (max-width: 1180px)
+   Tablet / narrow: collapse grids, stack layouts
+   ============================================ */
+@media (max-width: 1180px) {
+  body {
+    overflow: auto;
+  }
+
+  .app-shell {
+    height: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  .workspace,
+  .screen-page {
+    height: auto;
+  }
+
+  .page-header,
+  .customer-body,
+  .admin-body,
+  .compact-admin-body,
+  .customer-header .header-metrics,
+  .admin-header .header-metrics,
+  .admin-overview-row,
+  .summary-stack.inline,
+  .dish-grid,
+  .admin-dish-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .metric-strip,
+  .dashboard-grid,
+  .category-manager-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-page .compact-admin-body,
+  .order-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .category-admin-side {
+    max-height: 520px;
+  }
+}
+
+/* ============================================
+   @media (max-width: 980px)
+   Checkout / editor / dashboard mid-width
+   ============================================ */
+@media (max-width: 980px) {
+  .checkout-layout,
+  .dish-editor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-item-row {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .checkout-item-media {
+    width: 48px;
+    height: 48px;
+  }
+
+  .checkout-item-row > .qty-group,
+  .checkout-item-row > strong {
+    grid-column: 2;
+  }
+
+  .checkout-actions {
+    grid-template-columns: 1fr;
+  }
+
+  body {
+    overflow: auto;
+  }
+
+  .dashboard-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .dashboard-grid {
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    overflow: visible;
+  }
+
+  .dashboard-chart-main,
+  .dashboard-side-stack,
+  .dashboard-orders {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .dashboard-side-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    overflow: visible;
+  }
+
+  .dashboard-orders {
+    max-height: 360px;
+  }
+
+  .dashboard-recent-scroll {
+    max-height: 280px;
+  }
+}
+
+/* ============================================
+   @media (max-width: 760px)
+   Phone: single-column everything
+   ============================================ */
+@media (max-width: 760px) {
+  .workspace {
+    padding: 14px;
+  }
+
+  .screen-page {
+    padding: 14px;
+  }
+
+  .detail-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-mask {
+    padding: 12px;
+  }
+
+  .success-hero,
+  .success-summary {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .success-copy h3 {
+    font-size: 32px;
+  }
+
+  .sidebar-nav,
+  .metric-strip,
+  .dashboard-grid,
+  .category-manager-grid,
+  .skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header,
+  .panel-head,
+  .modal-footer,
+  .category-card-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .category-admin-side .panel-head.compact,
+  .compact-category-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .category-side-summary,
+  .order-detail-loading .skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-detail-item-row {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .order-detail-item-row > strong {
+    grid-column: 2;
+  }
+}
+
+/* ============================================
+   @media (max-width: 680px)
+   Small phone dashboard adjustments
+   ============================================ */
+@media (max-width: 680px) {
+  .dashboard-page .metric-strip,
+  .dashboard-side-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-chart-main .bar-chart {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dashboard-chart-main .bar-track {
+    height: 120px;
+  }
+}

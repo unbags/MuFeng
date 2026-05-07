@@ -1,0 +1,85 @@
+package com.example.ordering.service;
+
+import com.example.ordering.config.HighConcurrencyProperties;
+import org.springframework.stereotype.Component;
+
+@Component
+public class SnowflakeIdGenerator {
+
+    private static final long EPOCH = 1704067200000L;
+    private static final long WORKER_ID_BITS = 5L;
+    private static final long DATACENTER_ID_BITS = 5L;
+    private static final long SEQUENCE_BITS = 12L;
+    private static final long MAX_WORKER_ID = ~(-1L << WORKER_ID_BITS);
+    private static final long MAX_DATACENTER_ID = ~(-1L << DATACENTER_ID_BITS);
+    private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
+    private static final long WORKER_ID_SHIFT = SEQUENCE_BITS;
+    private static final long DATACENTER_ID_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS;
+    private static final long TIMESTAMP_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS + DATACENTER_ID_BITS;
+
+    private final long workerId;
+    private final long datacenterId;
+    private long sequence = 0L;
+    private long lastTimestamp = -1L;
+
+    public SnowflakeIdGenerator(HighConcurrencyProperties properties) {
+        if (properties.getWorkerId() > MAX_WORKER_ID || properties.getWorkerId() < 0) {
+            throw new IllegalArgumentException("机器编号超出允许范围");
+        }
+        if (properties.getDatacenterId() > MAX_DATACENTER_ID || properties.getDatacenterId() < 0) {
+            throw new IllegalArgumentException("数据中心编号超出允许范围");
+        }
+        this.workerId = properties.getWorkerId();
+        this.datacenterId = properties.getDatacenterId();
+    }
+
+    public synchronized long nextId() {
+        long currentTimestamp = currentTimestamp();
+        if (currentTimestamp < lastTimestamp) {
+            long offset = lastTimestamp - currentTimestamp;
+            if (offset > 5000) {
+                throw new IllegalStateException("系统时间异常，暂时无法生成订单编号");
+            }
+            try {
+                Thread.sleep(offset + 1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("系统时间异常，暂时无法生成订单编号");
+            }
+            currentTimestamp = currentTimestamp();
+        }
+
+        if (currentTimestamp == lastTimestamp) {
+            sequence = (sequence + 1) & SEQUENCE_MASK;
+            if (sequence == 0L) {
+                currentTimestamp = waitUntilNextMillis(lastTimestamp);
+            }
+        } else {
+            sequence = 0L;
+        }
+
+        lastTimestamp = currentTimestamp;
+        return ((currentTimestamp - EPOCH) << TIMESTAMP_SHIFT)
+            | (datacenterId << DATACENTER_ID_SHIFT)
+            | (workerId << WORKER_ID_SHIFT)
+            | sequence;
+    }
+
+    private long waitUntilNextMillis(long lastTimestamp) {
+        long timestamp = currentTimestamp();
+        while (timestamp <= lastTimestamp) {
+            try {
+                Thread.sleep(0, 1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            timestamp = currentTimestamp();
+        }
+        return timestamp;
+    }
+
+    private long currentTimestamp() {
+        return System.currentTimeMillis();
+    }
+}
