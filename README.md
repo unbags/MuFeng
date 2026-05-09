@@ -78,7 +78,7 @@ npm install
 npm run dev
 ```
 
-访问 `http://localhost:8888`，顾客扫码后浏览菜单并下单。
+访问 `http://localhost:8888`，顾客线上浏览菜单并下单。
 
 两个前端均内置 API 代理，`/api/*` 请求自动转发到后端 `localhost:8080`，无需额外配置 CORS。
 
