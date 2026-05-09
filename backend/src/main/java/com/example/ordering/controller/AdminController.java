@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @Validated
@@ -110,9 +110,13 @@ public class AdminController {
     @GetMapping("/orders")
     public ApiResponse<PageResponse<OrderSummaryResponse>> getOrders(
         @RequestParam(defaultValue = "1") int page,
-        @RequestParam(defaultValue = "20") int size
+        @RequestParam(defaultValue = "20") int size,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) String orderType,
+        @RequestParam(required = false) String tableNumber,
+        @RequestParam(required = false) String keyword
     ) {
-        return ApiResponse.success(adminService.getOrders(page, size));
+        return ApiResponse.success(adminService.getOrders(page, size, status, orderType, tableNumber, keyword));
     }
 
     @GetMapping("/orders/{orderNo}")
@@ -125,7 +129,12 @@ public class AdminController {
         @PathVariable String orderNo,
         @Valid @RequestBody OrderStatusRequest request
     ) {
-        return ApiResponse.success(adminService.updateOrderStatus(orderNo, request.getStatus()));
+        return ApiResponse.success(adminService.updateOrderStatus(
+            orderNo,
+            request.getStatus(),
+            request.getReason(),
+            request.getOperator()
+        ));
     }
 
     @GetMapping("/dashboard")

@@ -29,12 +29,23 @@ CREATE TABLE IF NOT EXISTS customer_order (
     order_no VARCHAR(32) NOT NULL UNIQUE,
     order_type VARCHAR(16) NOT NULL,
     note VARCHAR(60) NULL,
+    table_number VARCHAR(32) NULL,
+    pickup_number VARCHAR(32) NULL,
+    contact_name VARCHAR(64) NULL,
+    contact_phone VARCHAR(32) NULL,
     subtotal DECIMAL(10, 2) NOT NULL,
     package_fee DECIMAL(10, 2) NOT NULL,
     delivery_fee DECIMAL(10, 2) NOT NULL,
     total_amount DECIMAL(10, 2) NOT NULL,
     item_count INT NOT NULL,
     status VARCHAR(16) NOT NULL,
+    payment_status VARCHAR(16) NOT NULL DEFAULT 'UNPAID',
+    cancel_reason VARCHAR(255) NULL,
+    accepted_at DATETIME NULL,
+    preparing_at DATETIME NULL,
+    ready_at DATETIME NULL,
+    completed_at DATETIME NULL,
+    cancelled_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -69,6 +80,17 @@ ALTER TABLE dish
     ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
 ALTER TABLE customer_order
+    ADD COLUMN IF NOT EXISTS table_number VARCHAR(32) NULL,
+    ADD COLUMN IF NOT EXISTS pickup_number VARCHAR(32) NULL,
+    ADD COLUMN IF NOT EXISTS contact_name VARCHAR(64) NULL,
+    ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(32) NULL,
+    ADD COLUMN IF NOT EXISTS payment_status VARCHAR(16) NOT NULL DEFAULT 'UNPAID',
+    ADD COLUMN IF NOT EXISTS cancel_reason VARCHAR(255) NULL,
+    ADD COLUMN IF NOT EXISTS accepted_at DATETIME NULL,
+    ADD COLUMN IF NOT EXISTS preparing_at DATETIME NULL,
+    ADD COLUMN IF NOT EXISTS ready_at DATETIME NULL,
+    ADD COLUMN IF NOT EXISTS completed_at DATETIME NULL,
+    ADD COLUMN IF NOT EXISTS cancelled_at DATETIME NULL,
     ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ADD COLUMN IF NOT EXISTS updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
 
@@ -80,8 +102,25 @@ CREATE INDEX idx_dish_sale_status ON dish (available, deleted, category_id);
 CREATE INDEX idx_dish_category_id ON dish (category_id);
 CREATE INDEX idx_customer_order_created_at ON customer_order (created_at);
 CREATE INDEX idx_customer_order_status_created ON customer_order (status, created_at);
+CREATE INDEX idx_customer_order_type_status_created ON customer_order (order_type, status, created_at);
+CREATE INDEX idx_customer_order_table_number ON customer_order (table_number);
+CREATE INDEX idx_customer_order_pickup_number ON customer_order (pickup_number);
 CREATE INDEX idx_order_item_order_id ON order_item (order_id);
 CREATE INDEX idx_order_item_dish_id ON order_item (dish_id);
+
+CREATE TABLE IF NOT EXISTS order_status_log (
+    id BIGINT NOT NULL PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    order_no VARCHAR(32) NOT NULL,
+    from_status VARCHAR(16) NULL,
+    to_status VARCHAR(16) NOT NULL,
+    reason VARCHAR(255) NULL,
+    operator VARCHAR(64) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_order_status_log_order FOREIGN KEY (order_id) REFERENCES customer_order (id)
+);
+
+CREATE INDEX idx_order_status_log_order_no ON order_status_log (order_no, created_at);
 
 CREATE TABLE IF NOT EXISTS users (
     id            BIGINT       NOT NULL PRIMARY KEY,

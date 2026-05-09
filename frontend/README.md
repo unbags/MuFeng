@@ -1,4 +1,6 @@
-# 沐风餐饮 - 前端应用
+# 沐枫餐饮 - 店员管理端
+
+店员工作台前端应用，提供点餐操作、数据看板和商品管理功能。
 
 ## 技术栈
 
@@ -6,7 +8,7 @@
 |------|------|------|
 | Vue | 3.5 | 渐进式前端框架（Composition API） |
 | Vue Router | 4.6 | 官方路由管理器 |
-| Vite | 5.4 | 新一代前端构建工具 |
+| Vite | 5.4 | 前端构建工具 |
 
 ## 项目结构
 
@@ -26,7 +28,7 @@ frontend/
 │   ├── router/            # 路由定义
 │   ├── styles/            # 样式文件（CSS Token、布局、组件、响应式、动画）
 │   ├── utils/             # 工具函数（格式化、数据规范化）
-│   ├── views/             # 页面视图（顾客端、管理端、登录、注册、仪表盘、404）
+│   ├── views/             # 页面视图（工作台、管理端、登录、注册、仪表盘、404）
 │   ├── App.vue            # 根组件
 │   └── main.js            # 应用入口
 ├── index.html             # HTML 入口
@@ -38,12 +40,14 @@ frontend/
 
 | 路径 | 视图 | 说明 |
 |------|------|------|
-| `/` | CustomerView | 顾客点餐页面 |
-| `/admin` | AdminView | 菜品/分类管理页面 |
-| `/admin/dashboard` | DashboardView | 管理仪表盘 |
 | `/login` | LoginView | 管理员登录 |
-| `/register` | RegisterView | 管理员注册 |
+| `/register` | RegisterView | 首次初始化管理员账号 |
+| `/workbench` | CustomerView | 点餐工作台 |
+| `/dashboard` | DashboardView | 数据看板 |
+| `/products` | AdminView | 菜品/分类管理 |
 | `/:pathMatch(.*)*` | NotFoundView | 404 页面 |
+
+未登录状态下所有页面均自动跳转到 `/login`。
 
 ## 环境要求
 
@@ -64,9 +68,9 @@ npm install
 npm run dev
 ```
 
-默认访问 `http://localhost:5173`。
+默认访问 `http://localhost:7777`。
 
-开发服务器内置了 API 代理：所有 `/api/*` 请求会被转发到 `http://localhost:8080`（后端服务）。无需额外配置 CORS。
+开发服务器内置 API 代理：所有 `/api/*` 请求会被转发到 `http://localhost:8080`（后端服务）。无需额外配置 CORS。
 
 ### 3. 构建生产版本
 
@@ -97,7 +101,7 @@ server {
     root   /opt/ordering/frontend/dist;
     index  index.html;
 
-    # Vue Router history 模式回退
+    # Vue Router hash 模式回退
     location / {
         try_files $uri $uri/ /index.html;
     }
@@ -132,7 +136,7 @@ server {
 ### 方式二：Docker 部署
 
 ```dockerfile
-# build stage
+# 构建阶段
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY package*.json ./
@@ -140,7 +144,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# production stage
+# 生产阶段
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

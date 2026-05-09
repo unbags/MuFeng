@@ -6,6 +6,7 @@ import com.example.ordering.domain.Category;
 import com.example.ordering.domain.CustomerOrder;
 import com.example.ordering.domain.Dish;
 import com.example.ordering.domain.OrderItem;
+import com.example.ordering.domain.OrderStatusLog;
 import com.example.ordering.dto.AdminCategoryRequest;
 import com.example.ordering.dto.AdminDashboardResponse;
 import com.example.ordering.dto.AdminDishRequest;
@@ -20,6 +21,7 @@ import com.example.ordering.mapper.CategoryMapper;
 import com.example.ordering.mapper.CustomerOrderMapper;
 import com.example.ordering.mapper.DishMapper;
 import com.example.ordering.mapper.OrderItemMapper;
+import com.example.ordering.mapper.OrderStatusLogMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +55,7 @@ public class AdminService {
     private final CategoryMapper categoryMapper;
     private final CustomerOrderMapper customerOrderMapper;
     private final OrderItemMapper orderItemMapper;
+    private final OrderStatusLogMapper orderStatusLogMapper;
     private final MenuService menuService;
     private final SnowflakeIdGenerator idGenerator;
     private final NotificationService notificationService;
@@ -63,6 +66,7 @@ public class AdminService {
         CategoryMapper categoryMapper,
         CustomerOrderMapper customerOrderMapper,
         OrderItemMapper orderItemMapper,
+        OrderStatusLogMapper orderStatusLogMapper,
         MenuService menuService,
         SnowflakeIdGenerator idGenerator,
         NotificationService notificationService,
@@ -72,6 +76,7 @@ public class AdminService {
         this.categoryMapper = categoryMapper;
         this.customerOrderMapper = customerOrderMapper;
         this.orderItemMapper = orderItemMapper;
+        this.orderStatusLogMapper = orderStatusLogMapper;
         this.menuService = menuService;
         this.idGenerator = idGenerator;
         this.notificationService = notificationService;
@@ -142,12 +147,44 @@ public class AdminService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<OrderSummaryResponse> getOrders(int page, int size) {
+    public PageResponse<OrderSummaryResponse> getOrders(
+        int page,
+        int size,
+        String status,
+        String orderType,
+        String tableNumber,
+        String keyword
+    ) {
         int safePage = Math.max(1, page);
         int safeSize = Math.min(Math.max(1, size), 100);
         Page<CustomerOrder> pageParam = new Page<>(safePage, safeSize);
-        Page<CustomerOrder> resultPage = customerOrderMapper.selectPage(pageParam,
-            new LambdaQueryWrapper<CustomerOrder>().orderByDesc(CustomerOrder::getCreatedAt));
+        LambdaQueryWrapper<CustomerOrder> wrapper = new LambdaQueryWrapper<CustomerOrder>()
+            .orderByDesc(CustomerOrder::getCreatedAt);
+
+        String safeStatus = trimToNull(status);
+        if (safeStatus != null && !"all".equalsIgnoreCase(safeStatus)) {
+            wrapper.eq(CustomerOrder::getStatus, safeStatus.toUpperCase());
+        }
+        String safeOrderType = trimToNull(orderType);
+        if (safeOrderType != null && !"all".equalsIgnoreCase(safeOrderType)) {
+            wrapper.eq(CustomerOrder::getOrderType, safeOrderType);
+        }
+        String safeTableNumber = trimToNull(tableNumber);
+        if (safeTableNumber != null) {
+            wrapper.eq(CustomerOrder::getTableNumber, safeTableNumber);
+        }
+        String safeKeyword = trimToNull(keyword);
+        if (safeKeyword != null) {
+            wrapper.and(w -> w
+                .like(CustomerOrder::getOrderNo, safeKeyword)
+                .or()
+                .like(CustomerOrder::getPickupNumber, safeKeyword)
+                .or()
+                .like(CustomerOrder::getContactPhone, safeKeyword)
+            );
+        }
+
+        Page<CustomerOrder> resultPage = customerOrderMapper.selectPage(pageParam, wrapper);
 
         List<OrderSummaryResponse> items = resultPage.getRecords().stream()
             .map(this::toOrderSummaryResponse)
@@ -175,7 +212,13 @@ public class AdminService {
         response.setOrderNo(order.getOrderNo());
         response.setOrderType(order.getOrderType());
         response.setStatus(order.getStatus());
+        response.setPaymentStatus(order.getPaymentStatus());
         response.setNote(order.getNote());
+        response.setTableNumber(order.getTableNumber());
+        response.setPickupNumber(order.getPickupNumber());
+        response.setContactName(order.getContactName());
+        response.setContactPhone(order.getContactPhone());
+        response.setCancelReason(order.getCancelReason());
         response.setItemCount(order.getItemCount());
         response.setSubtotal(order.getSubtotal());
         response.setPackageFee(order.getPackageFee());
@@ -183,12 +226,22 @@ public class AdminService {
         response.setTotalAmount(order.getTotalAmount());
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
+        response.setAcceptedAt(order.getAcceptedAt());
+        response.setPreparingAt(order.getPreparingAt());
+        response.setReadyAt(order.getReadyAt());
+        response.setCompletedAt(order.getCompletedAt());
+        response.setCancelledAt(order.getCancelledAt());
         response.setItems(items);
         return response;
     }
 
     @Transactional
     public OrderDetailResponse updateOrderStatus(String orderNo, String newStatus) {
+        return updateOrderStatus(orderNo, newStatus, null, null);
+    }
+
+    @Transactional
+    public OrderDetailResponse updateOrderStatus(String orderNo, String newStatus, String reason, String operator) {
         CustomerOrder order = customerOrderMapper.selectOne(
             new LambdaQueryWrapper<CustomerOrder>().eq(CustomerOrder::getOrderNo, orderNo).last("limit 1")
         );
@@ -204,7 +257,9 @@ public class AdminService {
         }
 
         order.setStatus(target.name());
+        applyStatusTimestamp(order, target, reason);
         customerOrderMapper.updateById(order);
+        recordStatusLog(order, current.name(), target.name(), reason, operator);
         OrderDetailResponse updatedOrder = getOrderDetail(orderNo);
         notificationService.notifyOrderStatusChanged(updatedOrder);
         return updatedOrder;
@@ -510,10 +565,59 @@ public class AdminService {
         response.setOrderNo(order.getOrderNo());
         response.setOrderType(order.getOrderType());
         response.setStatus(order.getStatus());
+        response.setPaymentStatus(order.getPaymentStatus());
+        response.setTableNumber(order.getTableNumber());
+        response.setPickupNumber(order.getPickupNumber());
+        response.setContactName(order.getContactName());
+        response.setContactPhone(order.getContactPhone());
         response.setItemCount(order.getItemCount());
         response.setTotalAmount(order.getTotalAmount());
         response.setCreatedAt(order.getCreatedAt());
         return response;
+    }
+
+    private void applyStatusTimestamp(CustomerOrder order, OrderStatus target, String reason) {
+        LocalDateTime now = LocalDateTime.now();
+        switch (target) {
+            case CONFIRMED:
+                order.setAcceptedAt(now);
+                break;
+            case PREPARING:
+                order.setPreparingAt(now);
+                break;
+            case READY:
+                order.setReadyAt(now);
+                break;
+            case DELIVERED:
+                order.setCompletedAt(now);
+                break;
+            case CANCELLED:
+                order.setCancelledAt(now);
+                order.setCancelReason(trimToNull(reason));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void recordStatusLog(CustomerOrder order, String fromStatus, String toStatus, String reason, String operator) {
+        OrderStatusLog log = new OrderStatusLog();
+        log.setId(idGenerator.nextId());
+        log.setOrderId(order.getId());
+        log.setOrderNo(order.getOrderNo());
+        log.setFromStatus(fromStatus);
+        log.setToStatus(toStatus);
+        log.setReason(trimToNull(reason));
+        log.setOperator(trimToNull(operator));
+        orderStatusLogMapper.insert(log);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private OrderDetailItemResponse toOrderDetailItemResponse(OrderItem item) {

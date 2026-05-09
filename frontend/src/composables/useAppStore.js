@@ -147,8 +147,10 @@ export function useOrderingStore() {
 
     // Orders
     recentOrders: orders.recentOrders,
+    nextOrderActions: orders.nextOrderActions,
     openOrderDetail: orders.openOrderDetail,
     closeOrderDetail: orders.closeOrderDetail,
+    changeSelectedOrderStatus: orders.changeSelectedOrderStatus,
 
     // Dashboard
     revenueSeries: dashboard.revenueSeries,

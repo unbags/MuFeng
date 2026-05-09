@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { adminState, uiState } from './state.js'
 import { showToast } from './useToast.js'
-import { fetchAdminOrders, fetchAdminOrderDetail } from '../api/orders.js'
+import { fetchAdminOrders, fetchAdminOrderDetail, updateAdminOrderStatus } from '../api/orders.js'
 
 const recentOrders = computed(() =>
   (Array.isArray(adminState.orders) ? adminState.orders : []).slice(0, 8),
@@ -31,10 +31,42 @@ function closeOrderDetail() {
   uiState.orderDetailError = ''
 }
 
+const nextOrderActions = computed(() => {
+  const status = uiState.selectedOrderDetail?.status
+  const actions = {
+    PENDING: [
+      { status: 'CONFIRMED', label: '接单' },
+      { status: 'CANCELLED', label: '取消订单', reason: '店员取消' },
+    ],
+    CONFIRMED: [{ status: 'PREPARING', label: '开始制作' }],
+    PREPARING: [{ status: 'READY', label: '制作完成' }],
+    READY: [{ status: 'DELIVERED', label: '已取餐' }],
+  }
+  return actions[status] || []
+})
+
+async function changeSelectedOrderStatus(status, reason = '') {
+  const orderNo = uiState.selectedOrderDetail?.orderNo
+  if (!orderNo || uiState.actionLoading) return
+
+  try {
+    uiState.actionLoading = true
+    uiState.selectedOrderDetail = await updateAdminOrderStatus(orderNo, status, reason)
+    adminState.orders = await fetchAdminOrders()
+    showToast('订单状态已更新')
+  } catch (error) {
+    showToast(error.message || '订单状态更新失败')
+  } finally {
+    uiState.actionLoading = false
+  }
+}
+
 export function useOrders() {
   return {
     recentOrders,
+    nextOrderActions,
     openOrderDetail,
     closeOrderDetail,
+    changeSelectedOrderStatus,
   }
 }

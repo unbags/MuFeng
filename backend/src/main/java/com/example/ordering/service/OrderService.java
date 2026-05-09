@@ -75,6 +75,8 @@ public class OrderService {
         if (!"dine_in".equals(request.getOrderType()) && !"delivery".equals(request.getOrderType())) {
             throw new IllegalArgumentException("订单类型只能为堂食或外带");
         }
+        String tableNumber = trimToNull(request.getTableNumber());
+        String pickupNumber = "delivery".equals(request.getOrderType()) ? buildPickupNumber() : null;
 
         List<Long> dishIds = request.getItems().stream()
             .map(OrderItemRequest::getDishId)
@@ -143,12 +145,17 @@ public class OrderService {
         order.setOrderNo("ORD" + orderId);
         order.setOrderType(request.getOrderType());
         order.setNote(trimToNull(request.getNote()));
+        order.setTableNumber(tableNumber);
+        order.setPickupNumber(pickupNumber);
+        order.setContactName(trimToNull(request.getContactName()));
+        order.setContactPhone(trimToNull(request.getContactPhone()));
         order.setSubtotal(subtotal);
         order.setPackageFee(orderPackageFee);
         order.setDeliveryFee(orderDeliveryFee);
         order.setTotalAmount(total);
         order.setItemCount(itemCount);
         order.setStatus("PENDING");
+        order.setPaymentStatus("UNPAID");
         order.setCreatedAt(now);
         order.setUpdatedAt(now);
         customerOrderMapper.insert(order);
@@ -173,6 +180,12 @@ public class OrderService {
         response.setOrderNo(order.getOrderNo());
         response.setType(order.getOrderType());
         response.setNote(order.getNote());
+        response.setTableNumber(order.getTableNumber());
+        response.setPickupNumber(order.getPickupNumber());
+        response.setContactName(order.getContactName());
+        response.setContactPhone(order.getContactPhone());
+        response.setStatus(order.getStatus());
+        response.setPaymentStatus(order.getPaymentStatus());
         response.setSubtotal(order.getSubtotal());
         response.setPackageFee(order.getPackageFee());
         response.setDeliveryFee(order.getDeliveryFee());
@@ -208,7 +221,13 @@ public class OrderService {
         response.setOrderNo(order.getOrderNo());
         response.setOrderType(order.getOrderType());
         response.setStatus(order.getStatus());
+        response.setPaymentStatus(order.getPaymentStatus());
         response.setNote(order.getNote());
+        response.setTableNumber(order.getTableNumber());
+        response.setPickupNumber(order.getPickupNumber());
+        response.setContactName(order.getContactName());
+        response.setContactPhone(order.getContactPhone());
+        response.setCancelReason(order.getCancelReason());
         response.setItemCount(order.getItemCount());
         response.setSubtotal(order.getSubtotal());
         response.setPackageFee(order.getPackageFee());
@@ -216,8 +235,17 @@ public class OrderService {
         response.setTotalAmount(order.getTotalAmount());
         response.setCreatedAt(order.getCreatedAt());
         response.setUpdatedAt(order.getUpdatedAt());
+        response.setAcceptedAt(order.getAcceptedAt());
+        response.setPreparingAt(order.getPreparingAt());
+        response.setReadyAt(order.getReadyAt());
+        response.setCompletedAt(order.getCompletedAt());
+        response.setCancelledAt(order.getCancelledAt());
         response.setItems(items);
         return response;
+    }
+
+    private String buildPickupNumber() {
+        return "P" + System.currentTimeMillis() % 1000000;
     }
 
     private String trimToNull(String value) {

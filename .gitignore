@@ -1,0 +1,30 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# Maven
+target/
+*.class
+*.jar
+*.war
+
+# Node
+node_modules/
+dist/
+*.local
+
+# Runtime
+tomcat/
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Skills
+.superpowers/

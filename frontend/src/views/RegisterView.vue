@@ -49,7 +49,7 @@ async function handleSubmit() {
       <div class="auth-brand">
         <div class="auth-brand-content">
           <div class="auth-logo">🍽️</div>
-          <h2 class="auth-app-name">暖光食刻</h2>
+          <h2 class="auth-app-name">沐枫餐饮</h2>
           <p class="auth-tagline">温暖每一餐</p>
         </div>
       </div>

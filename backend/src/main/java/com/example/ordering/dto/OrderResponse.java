@@ -8,6 +8,12 @@ public class OrderResponse {
     private String orderNo;
     private String type;
     private String note;
+    private String tableNumber;
+    private String pickupNumber;
+    private String contactName;
+    private String contactPhone;
+    private String status;
+    private String paymentStatus;
     private BigDecimal subtotal;
     private BigDecimal packageFee;
     private BigDecimal deliveryFee;
@@ -36,6 +42,54 @@ public class OrderResponse {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public String getTableNumber() {
+        return tableNumber;
+    }
+
+    public void setTableNumber(String tableNumber) {
+        this.tableNumber = tableNumber;
+    }
+
+    public String getPickupNumber() {
+        return pickupNumber;
+    }
+
+    public void setPickupNumber(String pickupNumber) {
+        this.pickupNumber = pickupNumber;
+    }
+
+    public String getContactName() {
+        return contactName;
+    }
+
+    public void setContactName(String contactName) {
+        this.contactName = contactName;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
     }
 
     public BigDecimal getSubtotal() {

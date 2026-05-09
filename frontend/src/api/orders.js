@@ -7,12 +7,26 @@ export function createOrder(payload) {
   })
 }
 
-export function fetchAdminOrders() {
-  return request('/admin/orders').then(normalizeAdminOrders)
+export function fetchAdminOrders(params = {}) {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+      query.set(key, value)
+    }
+  })
+  const suffix = query.toString() ? `?${query.toString()}` : ''
+  return request(`/admin/orders${suffix}`).then(normalizeAdminOrders)
 }
 
 export function fetchAdminOrderDetail(orderNo) {
   return request(`/admin/orders/${encodeURIComponent(orderNo)}`)
+}
+
+export function updateAdminOrderStatus(orderNo, status, reason = '') {
+  return request(`/admin/orders/${encodeURIComponent(orderNo)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, reason, operator: 'staff' }),
+  })
 }
 
 function normalizeAdminOrders(response) {

@@ -160,6 +160,15 @@ const dashboard = useDashboard()
               </div>
               <div class="order-detail-meta">
                 <article><span>订单状态</span><strong>{{ formatOrderStatus(store.state.selectedOrderDetail.status) }}</strong></article>
+                <article v-if="store.state.selectedOrderDetail.tableNumber">
+                  <span>桌号</span>
+                  <strong>{{ store.state.selectedOrderDetail.tableNumber }}</strong>
+                </article>
+                <article v-if="store.state.selectedOrderDetail.pickupNumber">
+                  <span>取餐号</span>
+                  <strong>{{ store.state.selectedOrderDetail.pickupNumber }}</strong>
+                </article>
+                <article><span>支付状态</span><strong>{{ store.state.selectedOrderDetail.paymentStatus || 'UNPAID' }}</strong></article>
                 <article><span>下单时间</span><strong>{{ formatDateTime(store.state.selectedOrderDetail.createdAt) }}</strong></article>
                 <article><span>商品小计</span><strong>{{ formatPrice(store.state.selectedOrderDetail.subtotal) }}</strong></article>
                 <article v-if="Number(store.state.selectedOrderDetail.packageFee || 0) > 0">
@@ -177,7 +186,16 @@ const dashboard = useDashboard()
                 <p>{{ store.state.selectedOrderDetail.note || '暂无备注' }}</p>
               </div>
               <div class="checkout-actions single">
-                <button class="primary-btn" @click="store.closeOrderDetail">关闭详情</button>
+                <button
+                  v-for="action in store.nextOrderActions"
+                  :key="action.status"
+                  class="primary-btn"
+                  :disabled="store.state.actionLoading"
+                  @click="store.changeSelectedOrderStatus(action.status, action.reason)"
+                >
+                  {{ action.label }}
+                </button>
+                <button class="ghost-btn" @click="store.closeOrderDetail">关闭详情</button>
               </div>
             </aside>
           </div>

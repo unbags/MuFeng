@@ -1,24 +1,25 @@
 package com.example.ordering.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SignatureException;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Date;
 
 @Component
 public class JwtTokenUtil {
 
-    private static final String DEFAULT_SECRET = "OrderingSystemJwtSecretKey2024!@#$%^&*()VeryLongAndSecure";
+    private static final String DEFAULT_SECRET = "OrderingSystemJwtSecretKey2024!@#$%^&*()VeryLongAndSecureForJava17";
+    private static final int MIN_SECRET_BYTES = 64;
 
-    private final String secret;
+    private final SecretKey signingKey;
     private final long expirationMs;
 
     public JwtTokenUtil(
@@ -26,10 +27,13 @@ public class JwtTokenUtil {
         @Value("${jwt.expiration-ms:86400000}") long expirationMs,
         Environment environment
     ) {
-        if (isProd(environment) && (DEFAULT_SECRET.equals(secret) || secret.length() < 32)) {
+        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException("JWT 密钥长度不能少于64字节");
+        }
+        if (isProd(environment) && DEFAULT_SECRET.equals(secret)) {
             throw new IllegalStateException("生产环境必须配置安全的令牌密钥");
         }
-        this.secret = secret;
+        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expirationMs = expirationMs;
     }
 
@@ -38,10 +42,10 @@ public class JwtTokenUtil {
         Date expiration = new Date(now.getTime() + expirationMs);
 
         return Jwts.builder()
-            .setSubject(username)
-            .setIssuedAt(now)
-            .setExpiration(expiration)
-            .signWith(SignatureAlgorithm.HS512, secret.getBytes())
+            .subject(username)
+            .issuedAt(now)
+            .expiration(expiration)
+            .signWith(signingKey, Jwts.SIG.HS512)
             .compact();
     }
 
@@ -54,16 +58,17 @@ public class JwtTokenUtil {
         try {
             parseToken(token);
             return true;
-        } catch (ExpiredJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
     }
 
     private Claims parseToken(String token) {
         return Jwts.parser()
-            .setSigningKey(secret.getBytes())
-            .parseClaimsJws(token)
-            .getBody();
+            .verifyWith(signingKey)
+            .build()
+            .parseSignedClaims(token)
+            .getPayload();
     }
 
     private boolean isProd(Environment environment) {

@@ -22,6 +22,18 @@ public class CustomerOrder {
 
     private String note;
 
+    @TableField("table_number")
+    private String tableNumber;
+
+    @TableField("pickup_number")
+    private String pickupNumber;
+
+    @TableField("contact_name")
+    private String contactName;
+
+    @TableField("contact_phone")
+    private String contactPhone;
+
     private BigDecimal subtotal;
 
     @TableField("package_fee")
@@ -37,6 +49,27 @@ public class CustomerOrder {
     private Integer itemCount;
 
     private String status;
+
+    @TableField("payment_status")
+    private String paymentStatus;
+
+    @TableField("cancel_reason")
+    private String cancelReason;
+
+    @TableField("accepted_at")
+    private LocalDateTime acceptedAt;
+
+    @TableField("preparing_at")
+    private LocalDateTime preparingAt;
+
+    @TableField("ready_at")
+    private LocalDateTime readyAt;
+
+    @TableField("completed_at")
+    private LocalDateTime completedAt;
+
+    @TableField("cancelled_at")
+    private LocalDateTime cancelledAt;
 
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
@@ -74,6 +107,38 @@ public class CustomerOrder {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public String getTableNumber() {
+        return tableNumber;
+    }
+
+    public void setTableNumber(String tableNumber) {
+        this.tableNumber = tableNumber;
+    }
+
+    public String getPickupNumber() {
+        return pickupNumber;
+    }
+
+    public void setPickupNumber(String pickupNumber) {
+        this.pickupNumber = pickupNumber;
+    }
+
+    public String getContactName() {
+        return contactName;
+    }
+
+    public void setContactName(String contactName) {
+        this.contactName = contactName;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
     }
 
     public BigDecimal getSubtotal() {
@@ -122,6 +187,62 @@ public class CustomerOrder {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    public LocalDateTime getAcceptedAt() {
+        return acceptedAt;
+    }
+
+    public void setAcceptedAt(LocalDateTime acceptedAt) {
+        this.acceptedAt = acceptedAt;
+    }
+
+    public LocalDateTime getPreparingAt() {
+        return preparingAt;
+    }
+
+    public void setPreparingAt(LocalDateTime preparingAt) {
+        this.preparingAt = preparingAt;
+    }
+
+    public LocalDateTime getReadyAt() {
+        return readyAt;
+    }
+
+    public void setReadyAt(LocalDateTime readyAt) {
+        this.readyAt = readyAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -64,12 +64,23 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
             + "order_no VARCHAR(32) NOT NULL UNIQUE,"
             + "order_type VARCHAR(16) NOT NULL,"
             + "note VARCHAR(60) NULL,"
+            + "table_number VARCHAR(32) NULL,"
+            + "pickup_number VARCHAR(32) NULL,"
+            + "contact_name VARCHAR(64) NULL,"
+            + "contact_phone VARCHAR(32) NULL,"
             + "subtotal DECIMAL(10, 2) NOT NULL,"
             + "package_fee DECIMAL(10, 2) NOT NULL,"
             + "delivery_fee DECIMAL(10, 2) NOT NULL,"
             + "total_amount DECIMAL(10, 2) NOT NULL,"
             + "item_count INT NOT NULL,"
             + "status VARCHAR(16) NOT NULL,"
+            + "payment_status VARCHAR(16) NOT NULL DEFAULT 'UNPAID',"
+            + "cancel_reason VARCHAR(255) NULL,"
+            + "accepted_at DATETIME NULL,"
+            + "preparing_at DATETIME NULL,"
+            + "ready_at DATETIME NULL,"
+            + "completed_at DATETIME NULL,"
+            + "cancelled_at DATETIME NULL,"
             + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
             + "updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
             + ")");
@@ -102,6 +113,17 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
             + "comment VARCHAR(255) NULL,"
             + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
             + ")");
+
+        execute("CREATE TABLE IF NOT EXISTS order_status_log ("
+            + "id BIGINT NOT NULL PRIMARY KEY,"
+            + "order_id BIGINT NOT NULL,"
+            + "order_no VARCHAR(32) NOT NULL,"
+            + "from_status VARCHAR(16) NULL,"
+            + "to_status VARCHAR(16) NOT NULL,"
+            + "reason VARCHAR(255) NULL,"
+            + "operator VARCHAR(64) NULL,"
+            + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP"
+            + ")");
     }
 
     private void patchExistingTables() throws SQLException {
@@ -124,6 +146,17 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
 
         addColumnIfMissing("customer_order", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
         addColumnIfMissing("customer_order", "updated_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
+        addColumnIfMissing("customer_order", "table_number", "VARCHAR(32) NULL");
+        addColumnIfMissing("customer_order", "pickup_number", "VARCHAR(32) NULL");
+        addColumnIfMissing("customer_order", "contact_name", "VARCHAR(64) NULL");
+        addColumnIfMissing("customer_order", "contact_phone", "VARCHAR(32) NULL");
+        addColumnIfMissing("customer_order", "payment_status", "VARCHAR(16) NOT NULL DEFAULT 'UNPAID'");
+        addColumnIfMissing("customer_order", "cancel_reason", "VARCHAR(255) NULL");
+        addColumnIfMissing("customer_order", "accepted_at", "DATETIME NULL");
+        addColumnIfMissing("customer_order", "preparing_at", "DATETIME NULL");
+        addColumnIfMissing("customer_order", "ready_at", "DATETIME NULL");
+        addColumnIfMissing("customer_order", "completed_at", "DATETIME NULL");
+        addColumnIfMissing("customer_order", "cancelled_at", "DATETIME NULL");
 
         addColumnIfMissing("order_item", "created_at", "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
     }
@@ -134,11 +167,15 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         createIndexIfMissing("dish", "idx_dish_category_id", "CREATE INDEX idx_dish_category_id ON dish (category_id)");
         createIndexIfMissing("customer_order", "idx_customer_order_created_at", "CREATE INDEX idx_customer_order_created_at ON customer_order (created_at)");
         createIndexIfMissing("customer_order", "idx_customer_order_status_created", "CREATE INDEX idx_customer_order_status_created ON customer_order (status, created_at)");
+        createIndexIfMissing("customer_order", "idx_customer_order_type_status_created", "CREATE INDEX idx_customer_order_type_status_created ON customer_order (order_type, status, created_at)");
+        createIndexIfMissing("customer_order", "idx_customer_order_table_number", "CREATE INDEX idx_customer_order_table_number ON customer_order (table_number)");
+        createIndexIfMissing("customer_order", "idx_customer_order_pickup_number", "CREATE INDEX idx_customer_order_pickup_number ON customer_order (pickup_number)");
         createIndexIfMissing("order_item", "idx_order_item_order_id", "CREATE INDEX idx_order_item_order_id ON order_item (order_id)");
         createIndexIfMissing("order_item", "idx_order_item_dish_id", "CREATE INDEX idx_order_item_dish_id ON order_item (dish_id)");
         createIndexIfMissing("users", "idx_users_username", "CREATE INDEX idx_users_username ON users (username)");
         createIndexIfMissing("review", "idx_review_dish_id", "CREATE INDEX idx_review_dish_id ON review (dish_id, created_at)");
         createIndexIfMissing("review", "idx_review_order_no", "CREATE INDEX idx_review_order_no ON review (order_no, created_at)");
+        createIndexIfMissing("order_status_log", "idx_order_status_log_order_no", "CREATE INDEX idx_order_status_log_order_no ON order_status_log (order_no, created_at)");
     }
 
     private void addColumnIfMissing(String tableName, String columnName, String columnDefinition) throws SQLException {

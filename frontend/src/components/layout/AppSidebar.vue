@@ -19,7 +19,7 @@ function handleLogout() {
   <aside class="sidebar">
     <div class="sidebar-brand">
       <span class="eyebrow">店员工作台</span>
-      <h1>暖光食刻</h1>
+      <h1>沐枫餐饮</h1>
     </div>
 
     <nav class="sidebar-nav">

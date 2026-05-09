@@ -21,24 +21,46 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
-  redis:
-    host: ${REDIS_HOST:localhost}
-    port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD:}
-    timeout: 3000ms
-    lettuce:
-      pool:
-        max-active: 16
-        max-idle: 8
-        min-idle: 2
-        max-wait: 2000ms
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 2000ms
+  ai:
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:none}
+      embedding: ${SPRING_AI_MODEL_EMBEDDING:none}
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          model: ${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL:deepseek-v4-pro}
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:}
+      embedding:
+        options:
+          model: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v4}
+    vectorstore:
+      redis:
+        enabled: ${SPRING_AI_VECTORSTORE_REDIS_ENABLED:false}
+        initialize-schema: ${SPRING_AI_VECTORSTORE_REDIS_INITIALIZE_SCHEMA:false}
+        index-name: ${SPRING_AI_VECTORSTORE_REDIS_INDEX_NAME:mufeng-kb}
+        prefix: ${SPRING_AI_VECTORSTORE_REDIS_PREFIX:mufeng:kb:}
 
 app:
   # admin credentials are now stored in the users database table
   # username: ${ADMIN_USERNAME:admin}
   # password: ${ADMIN_PASSWORD:admin123}
   cors:
-    allowed-origins: http://localhost:5173
+    allowed-origins: http://localhost:7777,http://localhost:8888
   high-concurrency:
     worker-id: 1
     datacenter-id: 1
@@ -61,7 +83,7 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 jwt:
-  secret: ${JWT_SECRET:OrderingSystemJwtSecretKey2024!@#$%^&*()VeryLongAndSecure}
+  secret: ${JWT_SECRET:OrderingSystemJwtSecretKey2024!@#$%^&*()VeryLongAndSecureForJava17}
 
 management:
   endpoints:

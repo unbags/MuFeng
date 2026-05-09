@@ -3,3 +3,7 @@ spring:
     init:
       mode: never
       encoding: UTF-8
+  ai:
+    vectorstore:
+      redis:
+        initialize-schema: ${SPRING_AI_VECTORSTORE_REDIS_INITIALIZE_SCHEMA:true}

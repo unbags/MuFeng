@@ -8,6 +8,11 @@ public class OrderSummaryResponse {
     private String orderNo;
     private String orderType;
     private String status;
+    private String paymentStatus;
+    private String tableNumber;
+    private String pickupNumber;
+    private String contactName;
+    private String contactPhone;
     private Integer itemCount;
     private BigDecimal totalAmount;
     private LocalDateTime createdAt;
@@ -34,6 +39,46 @@ public class OrderSummaryResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getTableNumber() {
+        return tableNumber;
+    }
+
+    public void setTableNumber(String tableNumber) {
+        this.tableNumber = tableNumber;
+    }
+
+    public String getPickupNumber() {
+        return pickupNumber;
+    }
+
+    public void setPickupNumber(String pickupNumber) {
+        this.pickupNumber = pickupNumber;
+    }
+
+    public String getContactName() {
+        return contactName;
+    }
+
+    public void setContactName(String contactName) {
+        this.contactName = contactName;
+    }
+
+    public String getContactPhone() {
+        return contactPhone;
+    }
+
+    public void setContactPhone(String contactPhone) {
+        this.contactPhone = contactPhone;
     }
 
     public Integer getItemCount() {
