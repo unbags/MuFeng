@@ -62,16 +62,10 @@ public class ChatService {
         if ("PENDING".equals(status)) {
             return "，店员会尽快接单。";
         }
-        if ("CONFIRMED".equals(status)) {
-            return "，订单已确认。";
-        }
         if ("PREPARING".equals(status)) {
             return "，后厨正在制作。";
         }
-        if ("READY".equals(status)) {
-            return "，可以准备取餐。";
-        }
-        if ("DELIVERED".equals(status)) {
+        if ("COMPLETED".equals(status)) {
             return "，订单已完成。";
         }
         if ("CANCELLED".equals(status)) {

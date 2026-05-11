@@ -143,7 +143,10 @@ const dashboard = useDashboard()
               </div>
               <div class="checkout-item-scroll order-detail-items">
                 <article v-for="item in (store.state.selectedOrderDetail.items || [])" :key="`${item.dishId}-${item.name}`" class="checkout-item-row order-detail-item-row">
-                  <div class="checkout-item-media"><span>{{ (item.name || '商').slice(0, 1) }}</span></div>
+                  <div class="checkout-item-media">
+                    <img v-if="item.imageUrl" :src="item.imageUrl" :alt="item.name" />
+                    <span v-else>{{ (item.name || '商').slice(0, 1) }}</span>
+                  </div>
                   <div class="checkout-item-copy">
                     <strong>{{ item.name || '未知商品' }}</strong>
                     <small>{{ formatPrice(item.price) }} &times; {{ item.quantity }}</small>

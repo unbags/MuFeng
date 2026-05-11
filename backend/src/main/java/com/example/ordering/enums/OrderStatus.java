@@ -3,22 +3,16 @@ package com.example.ordering.enums;
 public enum OrderStatus {
 
     PENDING,
-    CONFIRMED,
     PREPARING,
-    READY,
-    DELIVERED,
+    COMPLETED,
     CANCELLED;
 
     public boolean canTransitionTo(OrderStatus target) {
         switch (this) {
             case PENDING:
-                return target == CONFIRMED || target == CANCELLED;
-            case CONFIRMED:
                 return target == PREPARING || target == CANCELLED;
             case PREPARING:
-                return target == READY || target == CANCELLED;
-            case READY:
-                return target == DELIVERED;
+                return target == COMPLETED;
             default:
                 return false;
         }

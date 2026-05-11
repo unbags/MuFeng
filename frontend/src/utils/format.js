@@ -11,11 +11,9 @@ export function formatOrderType(type) {
 }
 
 const ORDER_STATUS_MAP = {
-  PENDING: '待确认',
-  CONFIRMED: '已确认',
+  PENDING: '待处理',
   PREPARING: '制作中',
-  READY: '待取餐',
-  DELIVERED: '已取餐',
+  COMPLETED: '已完成',
   CANCELLED: '已取消',
 }
 

@@ -208,17 +208,28 @@ public class OrderService {
             throw new IllegalArgumentException("订单不存在");
         }
 
-        List<OrderDetailItemResponse> items = orderItemMapper.selectList(
+        List<OrderItem> orderItems = orderItemMapper.selectList(
             new LambdaQueryWrapper<OrderItem>()
                 .eq(OrderItem::getOrderId, order.getId())
                 .orderByAsc(OrderItem::getId)
-        ).stream().map(item -> {
+        );
+
+        List<Long> dishIds = orderItems.stream().map(OrderItem::getDishId).distinct().collect(Collectors.toList());
+        Map<Long, Dish> dishMap = dishMapper.selectList(
+            new LambdaQueryWrapper<Dish>().in(Dish::getId, dishIds)
+        ).stream().collect(Collectors.toMap(Dish::getId, d -> d, (a, b) -> a));
+
+        List<OrderDetailItemResponse> items = orderItems.stream().map(item -> {
             OrderDetailItemResponse response = new OrderDetailItemResponse();
             response.setDishId(item.getDishId());
             response.setName(item.getDishName());
             response.setPrice(item.getDishPrice());
             response.setQuantity(item.getQuantity());
             response.setTotal(item.getLineTotal());
+            Dish dish = dishMap.get(item.getDishId());
+            if (dish != null) {
+                response.setImageUrl(dish.getImageUrl());
+            }
             return response;
         }).collect(Collectors.toList());
 

@@ -25,7 +25,7 @@ public class BusinessRuleTools {
         return new BusinessRuleToolResponse(
             BigDecimal.ZERO,
             deliveryFee,
-            "订单 READY 后可准备取餐；具体取餐与价格信息以页面实时展示为准。"
+            "订单完成后可准备取餐；具体取餐与价格信息以页面实时展示为准。"
         );
     }
 }

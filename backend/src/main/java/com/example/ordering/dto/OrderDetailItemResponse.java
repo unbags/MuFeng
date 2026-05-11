@@ -9,6 +9,7 @@ public class OrderDetailItemResponse {
     private BigDecimal price;
     private Integer quantity;
     private BigDecimal total;
+    private String imageUrl;
 
     public Long getDishId() {
         return dishId;
@@ -48,5 +49,13 @@ public class OrderDetailItemResponse {
 
     public void setTotal(BigDecimal total) {
         this.total = total;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

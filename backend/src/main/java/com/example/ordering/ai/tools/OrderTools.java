@@ -31,16 +31,10 @@ public class OrderTools {
         if ("PENDING".equals(status)) {
             return "订单已提交，店员会尽快接单。";
         }
-        if ("CONFIRMED".equals(status)) {
-            return "订单已确认，后厨将开始准备。";
-        }
         if ("PREPARING".equals(status)) {
             return "后厨正在制作，请稍等。";
         }
-        if ("READY".equals(status)) {
-            return "订单已备好，可以准备取餐。";
-        }
-        if ("DELIVERED".equals(status)) {
+        if ("COMPLETED".equals(status)) {
             return "订单已完成。";
         }
         if ("CANCELLED".equals(status)) {

@@ -35,12 +35,10 @@ const nextOrderActions = computed(() => {
   const status = uiState.selectedOrderDetail?.status
   const actions = {
     PENDING: [
-      { status: 'CONFIRMED', label: '接单' },
+      { status: 'PREPARING', label: '开始制作' },
       { status: 'CANCELLED', label: '取消订单', reason: '店员取消' },
     ],
-    CONFIRMED: [{ status: 'PREPARING', label: '开始制作' }],
-    PREPARING: [{ status: 'READY', label: '制作完成' }],
-    READY: [{ status: 'DELIVERED', label: '已取餐' }],
+    PREPARING: [{ status: 'COMPLETED', label: '已完成' }],
   }
   return actions[status] || []
 })
