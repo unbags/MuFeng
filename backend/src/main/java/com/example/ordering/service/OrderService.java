@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 @Service
 public class OrderService {
 
-    private final BigDecimal packageFee;
     private final BigDecimal deliveryFee;
 
     private final DishMapper dishMapper;
@@ -45,7 +44,6 @@ public class OrderService {
         SnowflakeIdGenerator idGenerator,
         OrderWriteGuard orderWriteGuard,
         NotificationService notificationService,
-        @Value("${app.order.package-fee:2.00}") BigDecimal packageFee,
         @Value("${app.order.delivery-fee:4.00}") BigDecimal deliveryFee
     ) {
         this.dishMapper = dishMapper;
@@ -54,7 +52,6 @@ public class OrderService {
         this.idGenerator = idGenerator;
         this.orderWriteGuard = orderWriteGuard;
         this.notificationService = notificationService;
-        this.packageFee = packageFee;
         this.deliveryFee = deliveryFee;
     }
 
@@ -139,9 +136,8 @@ public class OrderService {
 
         }
 
-        BigDecimal orderPackageFee = itemCount > 0 ? this.packageFee : BigDecimal.ZERO;
         BigDecimal orderDeliveryFee = "delivery".equals(request.getOrderType()) ? this.deliveryFee : BigDecimal.ZERO;
-        BigDecimal total = subtotal.add(orderPackageFee).add(orderDeliveryFee);
+        BigDecimal total = subtotal.add(orderDeliveryFee);
 
         LocalDateTime now = LocalDateTime.now();
         long orderId = idGenerator.nextId();
@@ -156,7 +152,7 @@ public class OrderService {
         order.setContactName(trimToNull(request.getContactName()));
         order.setContactPhone(trimToNull(request.getContactPhone()));
         order.setSubtotal(subtotal);
-        order.setPackageFee(orderPackageFee);
+        order.setPackageFee(BigDecimal.ZERO);
         order.setDeliveryFee(orderDeliveryFee);
         order.setTotalAmount(total);
         order.setItemCount(itemCount);
@@ -193,7 +189,7 @@ public class OrderService {
         response.setStatus(order.getStatus());
         response.setPaymentStatus(order.getPaymentStatus());
         response.setSubtotal(order.getSubtotal());
-        response.setPackageFee(order.getPackageFee());
+        response.setPackageFee(BigDecimal.ZERO);
         response.setDeliveryFee(order.getDeliveryFee());
         response.setTotal(order.getTotalAmount());
         response.setItems(receiptItems);
@@ -239,7 +235,7 @@ public class OrderService {
         response.setCancelReason(order.getCancelReason());
         response.setItemCount(order.getItemCount());
         response.setSubtotal(order.getSubtotal());
-        response.setPackageFee(order.getPackageFee());
+        response.setPackageFee(BigDecimal.ZERO);
         response.setDeliveryFee(order.getDeliveryFee());
         response.setTotalAmount(order.getTotalAmount());
         response.setCreatedAt(order.getCreatedAt());

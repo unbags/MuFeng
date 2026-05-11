@@ -100,7 +100,6 @@ export function useOrderingStore() {
     cartItems: cart.cartItems,
     cartCount: cart.cartCount,
     subtotal: cart.subtotal,
-    packageFee: cart.packageFee,
     deliveryFee: cart.deliveryFee,
     total: cart.total,
     getQuantity: cart.getQuantity,

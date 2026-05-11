@@ -3,7 +3,7 @@ import { menuState, uiState, adminState } from './state.js'
 import { showToast } from './useToast.js'
 import { normalizeId, normalizeCollection } from '../utils/normalize.js'
 import { formatPrice } from '../utils/format.js'
-import { PACKAGE_FEE, DELIVERY_FEE } from '../config/constants.js'
+import { DELIVERY_FEE } from '../config/constants.js'
 import { fetchAdminDashboard } from '../api/dashboard.js'
 import { createOrder, fetchAdminOrders } from '../api/orders.js'
 
@@ -62,9 +62,8 @@ const subtotal = computed(() =>
   cartItems.value.reduce((total, item) => total + Number(item.price) * item.quantity, 0),
 )
 
-const packageFee = computed(() => (cartCount.value > 0 ? PACKAGE_FEE : 0))
 const deliveryFee = computed(() => (uiState.orderType === 'delivery' ? DELIVERY_FEE : 0))
-const total = computed(() => subtotal.value + packageFee.value + deliveryFee.value)
+const total = computed(() => subtotal.value + deliveryFee.value)
 
 function getQuantity(dishId) {
   return uiState.cart.find((item) => normalizeId(item.id) === normalizeId(dishId))?.quantity ?? 0
@@ -176,7 +175,6 @@ export function useCart() {
     cartItems,
     cartCount,
     subtotal,
-    packageFee,
     deliveryFee,
     total,
     setOrderType,

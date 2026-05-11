@@ -42,7 +42,7 @@ class AiAssistantServiceTest {
     void routesGeneralKnowledgeQuestionsToRagFirst() {
         AiAssistantService service = service(fullAiProperties(), mock(PromptTemplateService.class));
 
-        AssistantRoute route = service.route(new ChatRequest("打包费规则是什么", null));
+        AssistantRoute route = service.route(new ChatRequest("配送费规则是什么", null));
 
         assertThat(route).isEqualTo(AssistantRoute.RAG_FIRST);
     }

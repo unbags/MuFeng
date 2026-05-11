@@ -1,6 +1,5 @@
 import { computed, ref, watch } from 'vue'
 import { createOrder } from '../api/orders.js'
-import { PACKAGE_FEE } from '../config/constants.js'
 
 const CART_STORAGE_KEY = 'mufeng_customer_cart'
 const CART_VERSION = 1
@@ -52,8 +51,7 @@ function saveCart() {
 // --- computed ---
 const cartCount = computed(() => cart.value.reduce((sum, item) => sum + item.quantity, 0))
 const cartTotal = computed(() => cart.value.reduce((sum, item) => sum + item.price * item.quantity, 0))
-const packageFee = computed(() => (cartCount.value > 0 ? PACKAGE_FEE : 0))
-const total = computed(() => cartTotal.value + packageFee.value)
+const total = computed(() => cartTotal.value)
 
 // --- cart operations ---
 function addToCart(dish) {
@@ -176,7 +174,6 @@ export function useCart() {
     cart,
     cartCount,
     cartTotal,
-    packageFee,
     total,
     isCartOpen,
     orderType,

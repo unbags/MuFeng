@@ -171,10 +171,6 @@ const dashboard = useDashboard()
                 <article><span>支付状态</span><strong>{{ store.state.selectedOrderDetail.paymentStatus || 'UNPAID' }}</strong></article>
                 <article><span>下单时间</span><strong>{{ formatDateTime(store.state.selectedOrderDetail.createdAt) }}</strong></article>
                 <article><span>商品小计</span><strong>{{ formatPrice(store.state.selectedOrderDetail.subtotal) }}</strong></article>
-                <article v-if="Number(store.state.selectedOrderDetail.packageFee || 0) > 0">
-                  <span>打包费</span>
-                  <strong>{{ formatPrice(store.state.selectedOrderDetail.packageFee) }}</strong>
-                </article>
                 <article v-if="Number(store.state.selectedOrderDetail.deliveryFee || 0) > 0">
                   <span>外带服务费</span>
                   <strong>{{ formatPrice(store.state.selectedOrderDetail.deliveryFee) }}</strong>

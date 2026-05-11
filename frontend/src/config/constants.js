@@ -1,5 +1,4 @@
 export const PAGE_SIZE = 9
-export const PACKAGE_FEE = 2
 export const DELIVERY_FEE = 4
 export const TOAST_DURATION_MS = 2400
 export const NOTE_MAX_LENGTH = 60

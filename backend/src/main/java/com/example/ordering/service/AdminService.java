@@ -242,7 +242,7 @@ public class AdminService {
         response.setCancelReason(order.getCancelReason());
         response.setItemCount(order.getItemCount());
         response.setSubtotal(order.getSubtotal());
-        response.setPackageFee(order.getPackageFee());
+        response.setPackageFee(BigDecimal.ZERO);
         response.setDeliveryFee(order.getDeliveryFee());
         response.setTotalAmount(order.getTotalAmount());
         response.setCreatedAt(order.getCreatedAt());

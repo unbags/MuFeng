@@ -75,7 +75,6 @@ app:
     menu-cache-ttl-seconds: 30
     max-concurrent-order-writes: 300
   order:
-    package-fee: 2.00
     delivery-fee: 4.00
   storage:
     image-dir: src/main/resources/images
