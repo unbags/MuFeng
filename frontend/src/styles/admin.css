@@ -70,7 +70,7 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(22, 143, 127, 0.15);
+  background: rgba(212, 164, 124, 0.18);
   color: var(--teal);
   font-size: 13px;
   line-height: 1;
@@ -79,7 +79,7 @@
 }
 
 .filter-clear:hover {
-  background: rgba(240, 111, 95, 0.18);
+  background: rgba(224, 136, 110, 0.20);
   color: var(--coral);
 }
 
@@ -92,7 +92,7 @@
 }
 
 .admin-page .primary-btn:hover {
-  box-shadow: 0 6px 20px rgba(22, 143, 127, 0.3);
+  box-shadow: 0 6px 20px rgba(212, 164, 124, 0.36);
   transform: translateY(-1px);
 }
 
@@ -260,7 +260,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(22, 143, 127, 0.12), transparent);
+  background: linear-gradient(90deg, transparent, rgba(212, 164, 124, 0.15), transparent);
   animation: toggle-shimmer 0.8s ease infinite;
 }
 
@@ -324,7 +324,7 @@
 }
 
 .order-detail-meta .total {
-  border-color: rgba(22, 143, 127, 0.24);
+  border-color: rgba(212, 164, 124, 0.28);
   background: linear-gradient(135deg, var(--teal-soft), rgba(255, 255, 255, 0.88));
 }
 
@@ -349,4 +349,279 @@
 
 .admin-page .dish-editor-fields::-webkit-scrollbar {
   display: none;
+}
+
+/* ============================================
+   Knowledge base page
+   ============================================ */
+.knowledge-page {
+  background: var(--app-bg);
+}
+
+.knowledge-body {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 18px;
+}
+
+.knowledge-body .panel {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--border-dark);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.knowledge-page .admin-action-row {
+  margin-bottom: 0;
+}
+
+/* Drop zone */
+.knowledge-drop-zone {
+  border: 2px dashed rgba(212, 164, 124, 0.28);
+  border-radius: var(--radius-lg);
+  padding: 48px 24px;
+  text-align: center;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+  background: var(--surface-soft);
+}
+
+.knowledge-drop-zone.drag-over {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+}
+
+.knowledge-drop-content {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.knowledge-drop-content strong {
+  color: var(--text);
+  font-size: var(--text-lg);
+}
+
+.knowledge-drop-content span {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.knowledge-drop-hint {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.knowledge-file-btn {
+  position: relative;
+  cursor: pointer;
+  margin-top: 6px;
+  user-select: none;
+}
+
+.knowledge-file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* File list */
+.knowledge-file-list {
+  display: grid;
+  gap: 8px;
+}
+
+.knowledge-file-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.knowledge-file-head span {
+  color: var(--text);
+  font-weight: 700;
+  font-size: var(--text-base);
+}
+
+.knowledge-file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.knowledge-file-row.status-success {
+  border-color: rgba(52, 199, 89, 0.2);
+  background: rgba(52, 199, 89, 0.03);
+}
+
+.knowledge-file-row.status-error {
+  border-color: rgba(255, 59, 48, 0.15);
+  background: rgba(255, 59, 48, 0.03);
+}
+
+.knowledge-file-row.status-uploading {
+  border-color: rgba(212, 164, 124, 0.20);
+  background: rgba(212, 164, 124, 0.04);
+}
+
+.knowledge-file-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--teal-soft);
+  color: var(--teal);
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+
+.knowledge-file-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.knowledge-file-info strong {
+  display: block;
+  color: var(--text);
+  font-size: var(--text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knowledge-file-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.knowledge-file-meta span {
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.knowledge-file-type-pill,
+.knowledge-chunk-pill {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: var(--text-xs);
+}
+
+.knowledge-file-type-pill {
+  background: rgba(212, 164, 124, 0.10);
+  color: var(--teal);
+}
+
+.knowledge-chunk-pill {
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--success);
+}
+
+.knowledge-file-error {
+  margin: 4px 0 0;
+  color: var(--danger);
+  font-size: var(--text-xs);
+}
+
+.knowledge-file-status {
+  flex-shrink: 0;
+}
+
+.knowledge-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.knowledge-status-pill.pending {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--muted);
+}
+
+.knowledge-status-pill.uploading {
+  background: rgba(212, 164, 124, 0.10);
+  color: var(--teal);
+}
+
+.knowledge-status-pill.success {
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--success);
+}
+
+.knowledge-status-pill.error {
+  background: rgba(255, 59, 48, 0.08);
+  color: var(--danger);
+}
+
+.knowledge-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--teal-soft);
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: know-spin 0.6s linear infinite;
+}
+
+@keyframes know-spin {
+  to { transform: rotate(360deg); }
+}
+
+.knowledge-remove-btn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.knowledge-remove-btn:hover {
+  background: rgba(255, 59, 48, 0.12);
+  color: var(--danger);
+}
+
+/* Empty state for knowledge */
+.knowledge-empty {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.knowledge-empty strong {
+  color: var(--text);
+  font-size: var(--text-base);
+}
+
+.knowledge-empty span {
+  color: var(--muted);
+  font-size: var(--text-sm);
 }
