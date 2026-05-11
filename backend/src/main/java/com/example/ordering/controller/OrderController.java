@@ -27,12 +27,18 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    /**
+     * 创建顾客订单，并返回订单小票信息。
+     */
     @PostMapping
     @RateLimit(maxRequests = 20, windowSeconds = 60)
     public ApiResponse<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request) {
         return ApiResponse.success(orderService.createOrder(request));
     }
 
+    /**
+     * 根据订单号查询订单详情和实时状态。
+     */
     @GetMapping("/{orderNo}")
     public ApiResponse<OrderDetailResponse> getOrder(@PathVariable String orderNo) {
         return ApiResponse.success(orderService.getOrder(orderNo));

@@ -1,13 +1,37 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watch, nextTick, ref } from 'vue'
 import { useChat } from '../../composables/useChat.js'
 import { useCart } from '../../composables/useCart.js'
 
-const { isSupportOpen, supportInput, supportMessages, quickQuestions, isSending, askSupport, closeSupport } =
-  useChat()
+const {
+  isSupportOpen,
+  supportInput,
+  supportMessages,
+  isSending,
+  isStreaming,
+  askSupport,
+  closeSupport,
+} = useChat()
 const { isCartOpen } = useCart()
 
 const panelRight = computed(() => (isCartOpen.value ? '484px' : '28px'))
+
+const messagesEl = ref(null)
+
+function scrollToBottom() {
+  nextTick(() => {
+    const el = messagesEl.value
+    if (el) el.scrollTop = el.scrollHeight
+  })
+}
+
+const scrollTrigger = computed(() => {
+  const msgs = supportMessages.value
+  const last = msgs[msgs.length - 1]
+  return msgs.length + (last?.text?.length ?? 0)
+})
+
+watch(scrollTrigger, () => scrollToBottom())
 </script>
 
 <template>
@@ -15,31 +39,39 @@ const panelRight = computed(() => (isCartOpen.value ? '484px' : '28px'))
     <div v-if="isSupportOpen" class="support-panel">
       <div class="support-head">
         <div>
-          <span>在线</span>
+          <span>{{ isStreaming ? '正在输入' : '在线' }}</span>
           <h2>沐枫点餐助手</h2>
         </div>
         <button type="button" @click="closeSupport">关闭</button>
       </div>
 
-      <div class="support-messages">
+      <div ref="messagesEl" class="support-messages">
         <article
           v-for="(message, index) in supportMessages"
           :key="`${message.role}-${index}`"
           :class="['support-message', message.role]"
         >
           {{ message.text }}
+          <span v-if="message.isStreaming" class="stream-cursor" aria-hidden="true">|</span>
+          <span
+            v-if="message.role === 'assistant' && !message.isStreaming && (message.source === 'AI' || message.source === 'AI-RAG')"
+            class="source-badge"
+          >
+            由 AI 生成
+          </span>
         </article>
       </div>
 
-      <div class="quick-questions" aria-label="快捷问题">
-        <button v-for="question in quickQuestions" :key="question" type="button" @click="askSupport(question)">
-          {{ question }}
-        </button>
-      </div>
-
       <form class="support-input" @submit.prevent="askSupport()">
-        <input v-model="supportInput" type="text" placeholder="输入关于菜品、口味或配送的问题" />
-        <button type="submit" :disabled="isSending">{{ isSending ? '发送中' : '发送' }}</button>
+        <input
+          v-model="supportInput"
+          type="text"
+          placeholder="输入关于菜品、口味或配送的问题"
+          :disabled="isSending"
+        />
+        <button type="submit" :disabled="isSending">
+          {{ isSending ? '发送中' : '发送' }}
+        </button>
       </form>
     </div>
   </section>
@@ -56,7 +88,7 @@ const panelRight = computed(() => (isCartOpen.value ? '484px' : '28px'))
 
 .support-panel {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   width: min(390px, calc(100vw - 32px));
   max-height: min(620px, calc(100vh - 112px));
   padding: 18px;
@@ -103,6 +135,7 @@ const panelRight = computed(() => (isCartOpen.value ? '484px' : '28px'))
   gap: 10px;
   overflow-y: auto;
   padding: 4px 2px 12px;
+  scroll-behavior: smooth;
 }
 
 .support-message {
@@ -111,6 +144,7 @@ const panelRight = computed(() => (isCartOpen.value ? '484px' : '28px'))
   padding: 12px 14px;
   border: 1px solid var(--line);
   line-height: 1.65;
+  white-space: pre-wrap;
 }
 
 .support-message.assistant {
@@ -124,28 +158,29 @@ const panelRight = computed(() => (isCartOpen.value ? '484px' : '28px'))
   color: #fff;
 }
 
-.quick-questions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 4px 0 14px;
+.stream-cursor {
+  animation: blink 0.8s step-end infinite;
+  color: var(--accent);
+  font-weight: 200;
 }
 
-.quick-questions button {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.54);
-  color: var(--muted);
-  cursor: pointer;
-  font-family: inherit;
-  transition: transform 520ms var(--spring), color 180ms ease, border-color 180ms ease;
+.source-badge {
+  display: block;
+  margin-top: 6px;
+  width: fit-content;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  opacity: 0.7;
 }
 
-.quick-questions button:hover {
-  transform: translateY(-3px);
-  border-color: rgba(21, 21, 21, 0.36);
-  color: var(--ink);
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 
 .support-input {
@@ -165,6 +200,11 @@ const panelRight = computed(() => (isCartOpen.value ? '484px' : '28px'))
   font-family: inherit;
 }
 
+.support-input input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .support-input button {
   min-height: 44px;
   border: 1px solid var(--ink);
@@ -174,6 +214,11 @@ const panelRight = computed(() => (isCartOpen.value ? '484px' : '28px'))
   font-weight: 800;
   cursor: pointer;
   font-family: inherit;
+}
+
+.support-input button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 @media (max-width: 560px) {

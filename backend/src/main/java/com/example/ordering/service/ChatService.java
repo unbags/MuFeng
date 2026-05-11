@@ -22,6 +22,9 @@ public class ChatService {
         this.orderService = orderService;
     }
 
+    /**
+     * 根据顾客消息或订单号生成规则兜底回复。
+     */
     public ChatResponse reply(ChatRequest request) {
         String orderNo = trimToNull(request.getOrderNo());
         if (orderNo != null) {
@@ -52,6 +55,9 @@ public class ChatService {
         return new ChatResponse("今日推荐：" + recommendations + "。下单前请以页面展示价格和库存为准。", "MENU", LocalDateTime.now());
     }
 
+    /**
+     * 根据订单状态生成面向顾客的状态说明。
+     */
     private String statusHint(String status) {
         if ("PENDING".equals(status)) {
             return "，店员会尽快接单。";
@@ -74,6 +80,9 @@ public class ChatService {
         return "。";
     }
 
+    /**
+     * 去除字符串首尾空白，并将空字符串转换为 null。
+     */
     private String trimToNull(String value) {
         if (value == null) {
             return null;

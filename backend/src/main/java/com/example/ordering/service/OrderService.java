@@ -58,6 +58,9 @@ public class OrderService {
         this.deliveryFee = deliveryFee;
     }
 
+    /**
+     * 创建订单，进入写入限流保护后执行实际下单逻辑。
+     */
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
         if (!orderWriteGuard.tryAcquire()) {
@@ -71,6 +74,9 @@ public class OrderService {
         }
     }
 
+    /**
+     * 执行下单流程，包括校验菜品、扣减库存、计算费用和写入订单明细。
+     */
     private OrderResponse doCreateOrder(OrderRequest request) {
         if (!"dine_in".equals(request.getOrderType()) && !"delivery".equals(request.getOrderType())) {
             throw new IllegalArgumentException("订单类型只能为堂食或外带");
@@ -194,6 +200,9 @@ public class OrderService {
         return response;
     }
 
+    /**
+     * 根据订单号查询订单详情和订单明细。
+     */
     @Transactional(readOnly = true)
     public OrderDetailResponse getOrder(String orderNo) {
         CustomerOrder order = customerOrderMapper.selectOne(
@@ -244,10 +253,16 @@ public class OrderService {
         return response;
     }
 
+    /**
+     * 生成外带订单的取餐号。
+     */
     private String buildPickupNumber() {
         return "P" + System.currentTimeMillis() % 1000000;
     }
 
+    /**
+     * 去除字符串首尾空白，并将空字符串转换为 null。
+     */
     private String trimToNull(String value) {
         if (value == null) {
             return null;
@@ -256,6 +271,9 @@ public class OrderService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /**
+     * 判断菜品是否启用了有限库存控制。
+     */
     private boolean isLimitedStock(Dish dish) {
         return dish.getStock() != null && dish.getStock() >= 0;
     }

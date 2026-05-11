@@ -17,6 +17,9 @@ public class MenuController {
         this.menuService = menuService;
     }
 
+    /**
+     * 查询前台菜单分类和当前可售菜品。
+     */
     @GetMapping
     public ApiResponse<MenuResponse> getMenu() {
         return ApiResponse.success(menuService.getMenu());

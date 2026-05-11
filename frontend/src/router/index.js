@@ -4,6 +4,7 @@ import CustomerView from '../views/CustomerView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
+import KnowledgeView from '../views/KnowledgeView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 
 const AUTH_ROUTES = ['/login', '/register']
@@ -35,6 +36,12 @@ const router = createRouter({
       path: '/products',
       name: 'admin',
       component: AdminView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/knowledge',
+      name: 'knowledge',
+      component: KnowledgeView,
       meta: { requiresAuth: true },
     },
     {

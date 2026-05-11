@@ -31,6 +31,9 @@ public class AuthController {
         this.userService = userService;
     }
 
+    /**
+     * 管理员登录接口，校验账号密码并签发 JWT。
+     */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         User user = userService.authenticate(request.getUsername(), request.getPassword());
@@ -43,6 +46,9 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(resp));
     }
 
+    /**
+     * 系统初始化注册接口，创建首个管理员账号并签发 JWT。
+     */
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<LoginResponse>> register(@Valid @RequestBody RegisterRequest request) {
         User user = userService.register(
@@ -55,6 +61,9 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(resp));
     }
 
+    /**
+     * 查询系统是否已经存在管理员账号。
+     */
     @GetMapping("/status")
     public ApiResponse<AuthStatusResponse> status() {
         return ApiResponse.success(new AuthStatusResponse(userService.hasAdmin()));

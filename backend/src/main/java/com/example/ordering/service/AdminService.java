@@ -83,11 +83,17 @@ public class AdminService {
         this.imageRoot = Paths.get(imageDir).toAbsolutePath().normalize();
     }
 
+    /**
+     * 查询后台分类列表，并转换为前端需要的分类响应。
+     */
     @Transactional(readOnly = true)
     public List<CategoryResponse> getCategories() {
         return listCategories().stream().map(this::toCategoryResponse).collect(Collectors.toList());
     }
 
+    /**
+     * 创建分类，并在创建成功后刷新菜单缓存。
+     */
     @Transactional
     public CategoryResponse createCategory(AdminCategoryRequest request) {
         String label = request.getLabel().trim();
@@ -105,6 +111,9 @@ public class AdminService {
         return toCategoryResponse(categoryMapper.selectById(id));
     }
 
+    /**
+     * 更新分类名称和排序，并刷新菜单缓存。
+     */
     @Transactional
     public CategoryResponse updateCategory(String categoryId, AdminCategoryRequest request) {
         Category category = getCategoryOrThrow(categoryId);
@@ -115,6 +124,9 @@ public class AdminService {
         return toCategoryResponse(categoryMapper.selectById(category.getId()));
     }
 
+    /**
+     * 删除未被有效菜品占用的分类，并迁移已删除菜品的历史分类引用。
+     */
     @Transactional
     public void deleteCategory(String categoryId) {
         Category category = getCategoryOrThrow(categoryId);
@@ -136,6 +148,9 @@ public class AdminService {
         menuService.invalidateMenuCache();
     }
 
+    /**
+     * 查询后台菜品列表，包含分类名称、上下架和库存信息。
+     */
     @Transactional(readOnly = true)
     public List<AdminDishResponse> getDishes() {
         Map<String, String> categoryLabels = buildCategoryLabelMap();
@@ -146,6 +161,9 @@ public class AdminService {
         ).stream().map(dish -> toAdminDishResponse(dish, categoryLabels)).collect(Collectors.toList());
     }
 
+    /**
+     * 分页查询后台订单列表，并根据可选条件进行筛选。
+     */
     @Transactional(readOnly = true)
     public PageResponse<OrderSummaryResponse> getOrders(
         int page,
@@ -193,6 +211,9 @@ public class AdminService {
         return new PageResponse<>(items, resultPage.getTotal(), resultPage.getCurrent(), resultPage.getSize());
     }
 
+    /**
+     * 根据订单号查询后台订单详情和明细菜品。
+     */
     @Transactional(readOnly = true)
     public OrderDetailResponse getOrderDetail(String orderNo) {
         CustomerOrder order = customerOrderMapper.selectOne(
@@ -235,11 +256,17 @@ public class AdminService {
         return response;
     }
 
+    /**
+     * 更新订单状态，不记录额外原因和操作人。
+     */
     @Transactional
     public OrderDetailResponse updateOrderStatus(String orderNo, String newStatus) {
         return updateOrderStatus(orderNo, newStatus, null, null);
     }
 
+    /**
+     * 更新订单状态，校验状态流转合法性，并记录状态变更日志。
+     */
     @Transactional
     public OrderDetailResponse updateOrderStatus(String orderNo, String newStatus, String reason, String operator) {
         CustomerOrder order = customerOrderMapper.selectOne(
@@ -265,6 +292,9 @@ public class AdminService {
         return updatedOrder;
     }
 
+    /**
+     * 汇总后台仪表盘经营数据，包括收入、订单数和菜品上下架数量。
+     */
     @Transactional(readOnly = true)
     public AdminDashboardResponse getDashboard() {
         BigDecimal totalRevenue = customerOrderMapper.sumTotalRevenue();
@@ -299,6 +329,9 @@ public class AdminService {
         return response;
     }
 
+    /**
+     * 按周、月或年统计菜品销量和销售额排行。
+     */
     @Transactional(readOnly = true)
     public List<ProductSalesItem> getProductSales(String range) {
         int days;
@@ -350,6 +383,9 @@ public class AdminService {
             .collect(Collectors.toList());
     }
 
+    /**
+     * 校验并保存菜品图片，返回图片静态访问路径。
+     */
     public String uploadDishImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("请选择图片文件");
@@ -365,7 +401,7 @@ public class AdminService {
             throw new IllegalArgumentException("仅支持常见图片格式上传");
         }
 
-        // Validate magic bytes
+        // 校验文件头，避免伪装扩展名上传非图片文件。
         byte[] header = new byte[8];
         try (InputStream is = file.getInputStream()) {
             int bytesRead = is.read(header);
@@ -384,7 +420,7 @@ public class AdminService {
             throw new IllegalArgumentException("不支持的文件类型");
         }
 
-        // Validate as a readable image
+        // 校验图片是否能被正常解码读取。
         try (InputStream is = file.getInputStream()) {
             BufferedImage image = ImageIO.read(is);
             if (image == null) {
@@ -406,6 +442,9 @@ public class AdminService {
         }
     }
 
+    /**
+     * 创建菜品并刷新菜单缓存。
+     */
     @Transactional
     public AdminDishResponse createDish(AdminDishRequest request) {
         validateCategory(request.getCategoryId());
@@ -418,6 +457,9 @@ public class AdminService {
         return toAdminDishResponse(dishMapper.selectById(dish.getId()), buildCategoryLabelMap());
     }
 
+    /**
+     * 更新菜品资料并刷新菜单缓存。
+     */
     @Transactional
     public AdminDishResponse updateDish(Long dishId, AdminDishRequest request) {
         validateCategory(request.getCategoryId());
@@ -428,6 +470,9 @@ public class AdminService {
         return toAdminDishResponse(dishMapper.selectById(dishId), buildCategoryLabelMap());
     }
 
+    /**
+     * 更新菜品上下架状态并刷新菜单缓存。
+     */
     @Transactional
     public AdminDishResponse updateAvailability(Long dishId, Boolean available) {
         if (available == null) {
@@ -440,6 +485,9 @@ public class AdminService {
         return toAdminDishResponse(dishMapper.selectById(dishId), buildCategoryLabelMap());
     }
 
+    /**
+     * 软删除菜品并刷新菜单缓存。
+     */
     @Transactional
     public void deleteDish(Long dishId) {
         Dish dish = getDishOrThrow(dishId);

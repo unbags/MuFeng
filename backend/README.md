@@ -10,11 +10,13 @@ Spring Boot 后端服务，提供 REST API、JWT 认证、WebSocket 实时推送
 | Spring Boot | 3.5.14 | 核心框架 |
 | MyBatis-Plus | 3.5.7 | ORM 框架 |
 | MySQL | 8.0+ | 关系型数据库 |
-| Redis Stack | 7.4+ | 缓存与向量知识库 |
+| Redis Stack | 7.4+ | 菜单缓存 |
+| Milvus | 2.5+ | AI 菜单知识库向量检索 |
+| etcd / MinIO | - | Milvus 元数据与对象存储依赖 |
 | Spring Security | 3.5 | 认证与授权 |
 | JWT | 0.12.6 | 无状态令牌认证 |
 | WebSocket | 3.5 | 实时推送（订单状态通知等） |
-| Spring AI | 1.1.2 | DeepSeek OpenAI 兼容对话入口与 Redis Vector Store |
+| Spring AI | 1.1.6 | DeepSeek OpenAI 兼容对话入口与 Milvus Vector Store |
 | Spring AI Alibaba | 1.1.2.2 | DashScope embedding 与 agent workflow 前置依赖 |
 | MapStruct | 1.5.5 | 对象映射转换 |
 | Lombok | - | 简化 Java 代码 |
@@ -28,6 +30,7 @@ backend/
 ├── src/main/java/com/example/ordering/
 │   ├── config/          # Spring 配置类（Security、CORS、WebSocket、限流等）
 │   ├── controller/      # 控制器层
+│   ├── ai/              # AI 助手、提示词、RAG 知识库和工具调用
 │   ├── service/         # 业务逻辑层
 │   ├── mapper/          # MyBatis-Plus 数据访问层
 │   ├── domain/          # 数据库实体
@@ -39,8 +42,9 @@ backend/
 │   ├── application-dev.yml   # 开发环境配置
 │   ├── application-prod.yml  # 生产环境配置
 │   ├── schema.sql            # 数据库建表脚本
-│   └── data.sql              # 初始种子数据
-├── compose.yml               # Redis Stack 开发环境
+│   ├── data.sql              # 初始种子数据
+│   └── prompts/              # AI 助手提示词模板
+├── compose.yml               # Redis Stack、Milvus、etcd、MinIO 开发环境
 └── pom.xml                   # Maven 依赖配置
 ```
 
@@ -50,6 +54,7 @@ backend/
 - Maven 3.9+
 - MySQL 8.0+
 - Redis Stack 7.4+
+- Milvus 2.5+（可通过 `compose.yml` 启动）
 
 ## 快速开始
 
@@ -59,15 +64,22 @@ backend/
 CREATE DATABASE ordering_demo DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### 2. 启动 Redis Stack
+### 2. 启动后端依赖服务
 
-开发环境推荐使用仓库内 Compose 文件启动 Redis Stack：
+开发环境推荐使用仓库内 Compose 文件启动 Redis Stack、Milvus、etcd 和 MinIO：
 
 ```bash
 docker compose up -d
 ```
 
-服务默认监听 `localhost:6379`（无密码）。Redis Stack 提供后续 RAG 知识库所需的向量索引能力。
+默认端口：
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| Redis Stack | `6379` | 菜单缓存 |
+| Milvus | `19530` | 向量检索服务 |
+| Milvus HTTP | `9091` | Milvus 健康检查 |
+| MinIO Console | `9001` | Milvus 对象存储控制台 |
 
 ### 3. 修改配置（可选）
 
@@ -95,6 +107,12 @@ spring:
 | `REDIS_HOST` | `localhost` | Redis Stack 主机 |
 | `REDIS_PORT` | `6379` | Redis Stack 端口 |
 | `REDIS_PASSWORD` | 空 | Redis Stack 密码 |
+| `MILVUS_HOST` | `localhost` | Milvus 主机 |
+| `MILVUS_PORT` | `19530` | Milvus gRPC 端口 |
+| `MILVUS_COLLECTION_NAME` | `mufeng_kb` | 菜单知识库集合名 |
+| `APP_AI_ENABLED` | `false` | 是否启用 AI 助手模型调用 |
+| `APP_AI_RAG_ENABLED` | `false` | 是否启用知识库检索 |
+| `APP_AI_TOOLS_ENABLED` | `false` | 是否启用 AI 工具调用 |
 | `JWT_SECRET` | 开发默认密钥 | JWT HS512 签名密钥，生产必须替换 |
 | `DEEPSEEK_API_KEY` | 空 | DeepSeek 官方 OpenAI 兼容 API Key |
 | `DASHSCOPE_API_KEY` | 空 | DashScope embedding API Key |
@@ -113,9 +131,9 @@ mvn spring-boot:run -Dspring-boot.run.profiles=prod
 
 ## 多环境配置
 
-| Profile | SQL 初始化 | Redis Vector Store | 数据库连接池 | 适用场景 |
+| Profile | SQL 初始化 | Milvus Vector Store | 数据库连接池 | 适用场景 |
 |---------|-----------|--------------------|-------------|----------|
-| `dev` | 不执行 | 默认允许 | 默认配置 | 本地开发 |
+| `dev` | 不执行 | 默认允许初始化 schema | 默认配置 | 本地开发 |
 | `prod` | 禁用 | 固定关闭 | HikariCP 增强配置（最大 200 连接） | 生产部署 |
 
 通过 `--spring.profiles.active=prod` 切换环境。
@@ -129,6 +147,11 @@ mvn spring-boot:run -Dspring-boot.run.profiles=prod
 | GET | `/api/menu` | 获取完整菜单（分类+菜品） |
 | POST | `/api/orders` | 创建订单 |
 | GET | `/api/orders/{orderNo}` | 查询订单状态 |
+| POST | `/api/chat/query` | 智能助手一次性问答 |
+| POST | `/api/chat/stream` | 智能助手流式问答 |
+| POST | `/api/reviews` | 提交菜品评价 |
+| GET | `/api/reviews/dish/{dishId}` | 查询菜品评价 |
+| GET | `/api/reviews/order/{orderNo}` | 查询订单评价 |
 
 ### 认证接口
 
@@ -156,12 +179,17 @@ mvn spring-boot:run -Dspring-boot.run.profiles=prod
 | PATCH | `/api/admin/dishes/{dishId}/availability` | 切换菜品上下架 |
 | DELETE | `/api/admin/dishes/{dishId}` | 删除菜品 |
 | POST | `/api/admin/dishes/upload` | 上传菜品图片 |
+| POST | `/api/admin/ai/knowledge/reindex` | 手动重建 AI 菜单知识库索引 |
 
 ## 核心特性
 
 - **JWT 认证**：无状态登录，支持 token 过期与刷新
 - **WebSocket 推送**：订单状态变更实时通知管理端
 - **Redis 菜单缓存**：高频菜单读取走缓存，TTL 可配置
+- **AI 点餐助手**：支持规则兜底、模型问答、SSE 流式回复、RAG 检索和工具调用的配置入口
+- **Milvus 菜单知识库**：可将当前菜单写入向量库，用于后续知识库问答
+- **中文化接口提示**：默认成功提示、异常提示和知识库重建提示统一返回中文
+- **中文接口注释**：Controller、核心 Service、AI 工具和知识库索引方法均补充中文说明
 - **雪花算法 ID**：分布式唯一订单号生成
 - **高并发控制**：订单写入限流（默认 300 并发）
 - **逻辑删除**：数据软删除，可追溯
@@ -177,7 +205,7 @@ mvn test
 # 编译打包
 mvn -DskipTests package
 
-# 校验 Redis Stack Compose 配置
+# 校验后端依赖服务 Compose 配置
 docker compose config
 ```
 
@@ -185,6 +213,13 @@ docker compose config
 
 ```bash
 docker run --rm -v "$PWD":/workspace -w /workspace maven:3.9.9-eclipse-temurin-17 mvn test
+```
+
+本次后端中文化升级可单独验证：
+
+```bash
+docker run --rm -v "$PWD/..":/workspace -w /workspace/backend maven:3.9.9-eclipse-temurin-17 mvn -q -Dtest=UserFacingMessageLocalizationTest test
+docker run --rm -v "$PWD/..":/workspace -w /workspace/backend maven:3.9.9-eclipse-temurin-17 mvn -q -DskipTests compile
 ```
 
 ## 生产部署

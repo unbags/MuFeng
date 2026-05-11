@@ -22,6 +22,9 @@ public class SnowflakeIdGenerator {
     private long sequence = 0L;
     private long lastTimestamp = -1L;
 
+    /**
+     * 根据配置初始化雪花算法的机器编号和数据中心编号。
+     */
     public SnowflakeIdGenerator(HighConcurrencyProperties properties) {
         if (properties.getWorkerId() > MAX_WORKER_ID || properties.getWorkerId() < 0) {
             throw new IllegalArgumentException("机器编号超出允许范围");
@@ -33,6 +36,9 @@ public class SnowflakeIdGenerator {
         this.datacenterId = properties.getDatacenterId();
     }
 
+    /**
+     * 生成全局唯一编号，用于订单、评价和业务记录主键。
+     */
     public synchronized long nextId() {
         long currentTimestamp = currentTimestamp();
         if (currentTimestamp < lastTimestamp) {
@@ -65,6 +71,9 @@ public class SnowflakeIdGenerator {
             | sequence;
     }
 
+    /**
+     * 在同一毫秒序列耗尽时等待下一毫秒。
+     */
     private long waitUntilNextMillis(long lastTimestamp) {
         long timestamp = currentTimestamp();
         while (timestamp <= lastTimestamp) {
@@ -79,6 +88,9 @@ public class SnowflakeIdGenerator {
         return timestamp;
     }
 
+    /**
+     * 获取当前系统毫秒时间戳。
+     */
     private long currentTimestamp() {
         return System.currentTimeMillis();
     }

@@ -22,6 +22,9 @@ public class UserServiceImpl implements UserService {
         this.idGenerator = idGenerator;
     }
 
+    /**
+     * 注册首个管理员账号，并保存加密后的密码。
+     */
     @Override
     @Transactional
     public synchronized User register(String username, String rawPassword, String displayName) {
@@ -42,6 +45,9 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    /**
+     * 校验管理员账号密码，认证成功时返回用户信息。
+     */
     @Override
     public User authenticate(String username, String rawPassword) {
         User user = findByUsername(username);
@@ -54,11 +60,17 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    /**
+     * 判断系统是否已经存在管理员账号。
+     */
     @Override
     public boolean hasAdmin() {
         return userMapper.selectCount(null) > 0;
     }
 
+    /**
+     * 根据用户名查询管理员用户。
+     */
     @Override
     public User findByUsername(String username) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();

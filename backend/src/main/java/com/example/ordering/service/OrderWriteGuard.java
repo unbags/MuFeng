@@ -15,6 +15,9 @@ public class OrderWriteGuard {
         this.semaphore = new Semaphore(properties.getMaxConcurrentOrderWrites(), true);
     }
 
+    /**
+     * 尝试获取下单写入许可，避免高并发下同时写入过多订单。
+     */
     public boolean tryAcquire() {
         try {
             return semaphore.tryAcquire(3, TimeUnit.SECONDS);
@@ -24,6 +27,9 @@ public class OrderWriteGuard {
         }
     }
 
+    /**
+     * 释放下单写入许可。
+     */
     public void release() {
         semaphore.release();
     }

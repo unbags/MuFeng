@@ -42,21 +42,33 @@ public class AdminController {
         this.adminService = adminService;
     }
 
+    /**
+     * 查询后台菜品管理列表。
+     */
     @GetMapping("/dishes")
     public ApiResponse<List<AdminDishResponse>> getDishes() {
         return ApiResponse.success(adminService.getDishes());
     }
 
+    /**
+     * 查询后台可管理的菜品分类列表。
+     */
     @GetMapping("/categories")
     public ApiResponse<List<CategoryResponse>> getCategories() {
         return ApiResponse.success(adminService.getCategories());
     }
 
+    /**
+     * 创建菜品分类。
+     */
     @PostMapping("/categories")
     public ApiResponse<CategoryResponse> createCategory(@Valid @RequestBody AdminCategoryRequest request) {
         return ApiResponse.success(adminService.createCategory(request));
     }
 
+    /**
+     * 根据分类编号更新分类名称和排序。
+     */
     @PutMapping("/categories/{categoryId}")
     public ApiResponse<CategoryResponse> updateCategory(
         @PathVariable String categoryId,
@@ -65,12 +77,18 @@ public class AdminController {
         return ApiResponse.success(adminService.updateCategory(categoryId, request));
     }
 
+    /**
+     * 根据分类编号删除空分类。
+     */
     @DeleteMapping("/categories/{categoryId}")
     public ApiResponse<Void> deleteCategory(@PathVariable String categoryId) {
         adminService.deleteCategory(categoryId);
         return ApiResponse.success("删除成功", null);
     }
 
+    /**
+     * 上传菜品图片并返回可访问的图片地址。
+     */
     @PostMapping("/dishes/upload")
     public ApiResponse<ImageUploadResponse> uploadDishImage(@RequestParam("file") MultipartFile file) {
         String relativeUrl = adminService.uploadDishImage(file);
@@ -80,11 +98,17 @@ public class AdminController {
         return ApiResponse.success(new ImageUploadResponse(url));
     }
 
+    /**
+     * 创建后台菜品。
+     */
     @PostMapping("/dishes")
     public ApiResponse<AdminDishResponse> createDish(@Valid @RequestBody AdminDishRequest request) {
         return ApiResponse.success(adminService.createDish(request));
     }
 
+    /**
+     * 根据菜品编号更新菜品资料。
+     */
     @PutMapping("/dishes/{dishId}")
     public ApiResponse<AdminDishResponse> updateDish(
         @PathVariable Long dishId,
@@ -93,6 +117,9 @@ public class AdminController {
         return ApiResponse.success(adminService.updateDish(dishId, request));
     }
 
+    /**
+     * 根据菜品编号切换菜品上下架状态。
+     */
     @PatchMapping("/dishes/{dishId}/availability")
     public ApiResponse<AdminDishResponse> updateAvailability(
         @PathVariable Long dishId,
@@ -101,12 +128,18 @@ public class AdminController {
         return ApiResponse.success(adminService.updateAvailability(dishId, available));
     }
 
+    /**
+     * 根据菜品编号删除菜品。
+     */
     @DeleteMapping("/dishes/{dishId}")
     public ApiResponse<Void> deleteDish(@PathVariable Long dishId) {
         adminService.deleteDish(dishId);
         return ApiResponse.success("删除成功", null);
     }
 
+    /**
+     * 分页查询后台订单列表，支持状态、类型、桌号和关键词筛选。
+     */
     @GetMapping("/orders")
     public ApiResponse<PageResponse<OrderSummaryResponse>> getOrders(
         @RequestParam(defaultValue = "1") int page,
@@ -119,11 +152,17 @@ public class AdminController {
         return ApiResponse.success(adminService.getOrders(page, size, status, orderType, tableNumber, keyword));
     }
 
+    /**
+     * 根据订单号查询后台订单详情。
+     */
     @GetMapping("/orders/{orderNo}")
     public ApiResponse<OrderDetailResponse> getOrderDetail(@PathVariable String orderNo) {
         return ApiResponse.success(adminService.getOrderDetail(orderNo));
     }
 
+    /**
+     * 根据订单号更新订单状态并记录状态变更。
+     */
     @PatchMapping("/orders/{orderNo}/status")
     public ApiResponse<OrderDetailResponse> updateOrderStatus(
         @PathVariable String orderNo,
@@ -137,11 +176,17 @@ public class AdminController {
         ));
     }
 
+    /**
+     * 查询后台经营数据概览。
+     */
     @GetMapping("/dashboard")
     public ApiResponse<AdminDashboardResponse> getDashboard() {
         return ApiResponse.success(adminService.getDashboard());
     }
 
+    /**
+     * 按时间范围查询菜品销量排行。
+     */
     @GetMapping("/dashboard/product-sales")
     public ApiResponse<List<ProductSalesItem>> getProductSales(@RequestParam(defaultValue = "week") String range) {
         return ApiResponse.success(adminService.getProductSales(range));

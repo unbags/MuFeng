@@ -5,5 +5,5 @@ spring:
       encoding: UTF-8
   ai:
     vectorstore:
-      redis:
-        initialize-schema: ${SPRING_AI_VECTORSTORE_REDIS_INITIALIZE_SCHEMA:true}
+      milvus:
+        initialize-schema: ${SPRING_AI_VECTORSTORE_MILVUS_INITIALIZE_SCHEMA:true}

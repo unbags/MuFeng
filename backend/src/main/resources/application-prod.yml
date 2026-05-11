@@ -10,7 +10,7 @@ spring:
       mode: never
   ai:
     vectorstore:
-      redis:
+      milvus:
         initialize-schema: false
   datasource:
     url: jdbc:mysql://localhost:3306/ordering_demo?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=true&requireSSL=true&verifyServerCertificate=true&trustCertificateKeyStoreUrl=file:${TRUSTSTORE_PATH:classpath:truststore.jks}&trustCertificateKeyStorePassword=${TRUSTSTORE_PASSWORD:changeit}

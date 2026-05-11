@@ -17,12 +17,6 @@ const isWorkbenchRoute = computed(() =>
   route.path.startsWith('/workbench') || route.path.startsWith('/customer'),
 )
 
-const sidebarOverview = computed(() => [
-  { label: '可售商品', value: `${store.safeMenuDishes.length} 道` },
-  { label: '今日订单', value: `${store.admin.dashboard.todayOrderCount} 单` },
-  { label: '分类数量', value: `${store.manageableCategories.length} 类` },
-])
-
 onMounted(() => {
   const token = localStorage.getItem('token')
   if (!isAuthRoute.value && token) {
@@ -37,7 +31,7 @@ onMounted(() => {
   </div>
 
   <div v-else class="app-shell" :class="{ 'customer-shell': isWorkbenchRoute }">
-    <AppSidebar :overview="sidebarOverview" />
+    <AppSidebar />
 
     <main class="workspace">
       <AppToast />

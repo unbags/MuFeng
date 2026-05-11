@@ -32,6 +32,9 @@ public class ReviewController {
         this.idGenerator = idGenerator;
     }
 
+    /**
+     * 提交订单菜品评价。
+     */
     @PostMapping
     public ApiResponse<ReviewResponse> submitReview(@Valid @RequestBody ReviewRequest request) {
         Review review = new Review();
@@ -44,6 +47,9 @@ public class ReviewController {
         return ApiResponse.success(toResponse(review));
     }
 
+    /**
+     * 根据菜品编号查询该菜品的评价列表。
+     */
     @GetMapping("/dish/{dishId}")
     public ApiResponse<List<ReviewResponse>> getDishReviews(@PathVariable Long dishId) {
         List<ReviewResponse> reviews = reviewMapper.selectList(
@@ -54,6 +60,9 @@ public class ReviewController {
         return ApiResponse.success(reviews);
     }
 
+    /**
+     * 根据订单号查询该订单关联的评价列表。
+     */
     @GetMapping("/order/{orderNo}")
     public ApiResponse<List<ReviewResponse>> getOrderReviews(@PathVariable String orderNo) {
         List<ReviewResponse> reviews = reviewMapper.selectList(
@@ -64,6 +73,9 @@ public class ReviewController {
         return ApiResponse.success(reviews);
     }
 
+    /**
+     * 将评价实体转换为前端响应对象。
+     */
     private ReviewResponse toResponse(Review review) {
         ReviewResponse r = new ReviewResponse();
         r.setId(review.getId());

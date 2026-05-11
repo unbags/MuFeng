@@ -46,6 +46,9 @@ public class MenuService {
         this.objectMapper = redisObjectMapper;
     }
 
+    /**
+     * 查询当前菜单，优先读取 Redis 缓存，缓存缺失时回源数据库。
+     */
     public MenuResponse getMenu() {
         MenuResponse cached = getFromRedis();
         if (cached != null) {
@@ -54,6 +57,9 @@ public class MenuService {
         return loadAndCache();
     }
 
+    /**
+     * 清理菜单缓存，用于菜品或分类变更后刷新前台展示。
+     */
     public void invalidateMenuCache() {
         try {
             redisTemplate.delete(MENU_CACHE_KEY);
