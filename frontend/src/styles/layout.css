@@ -207,8 +207,8 @@
    Checkout layout
    ============================================ */
 .checkout-modal {
-  width: min(1080px, calc(100vw - 36px));
-  max-height: calc(100dvh - 36px);
+  width: min(900px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
@@ -253,8 +253,8 @@
    Dish editor layout
    ============================================ */
 .dish-editor-modal {
-  width: min(880px, calc(100vw - 36px));
-  max-height: calc(100dvh - 36px);
+  width: min(760px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
@@ -280,7 +280,11 @@
    Order detail layout
    ============================================ */
 .order-detail-modal {
-  width: min(980px, calc(100vw - 36px));
+  width: min(780px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .order-detail-layout {
