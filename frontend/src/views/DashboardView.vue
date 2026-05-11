@@ -170,12 +170,11 @@ const dashboard = useDashboard()
                 </article>
                 <article><span>支付状态</span><strong>{{ store.state.selectedOrderDetail.paymentStatus || 'UNPAID' }}</strong></article>
                 <article><span>下单时间</span><strong>{{ formatDateTime(store.state.selectedOrderDetail.createdAt) }}</strong></article>
-                <article><span>商品小计</span><strong>{{ formatPrice(store.state.selectedOrderDetail.subtotal) }}</strong></article>
                 <article v-if="Number(store.state.selectedOrderDetail.deliveryFee || 0) > 0">
                   <span>外带服务费</span>
                   <strong>{{ formatPrice(store.state.selectedOrderDetail.deliveryFee) }}</strong>
                 </article>
-                <article class="total"><span>实收合计</span><strong>{{ formatPrice(store.state.selectedOrderDetail.totalAmount) }}</strong></article>
+                <article class="total"><span>合计</span><strong>{{ formatPrice(store.state.selectedOrderDetail.totalAmount) }}</strong></article>
               </div>
               <div class="receipt-note modern order-detail-note">
                 <span>订单备注</span>
@@ -185,13 +184,13 @@ const dashboard = useDashboard()
                 <button
                   v-for="action in store.nextOrderActions"
                   :key="action.status"
-                  class="primary-btn"
+                  class="primary-btn tiny"
                   :disabled="store.state.actionLoading"
                   @click="store.changeSelectedOrderStatus(action.status, action.reason)"
                 >
                   {{ action.label }}
                 </button>
-                <button class="ghost-btn" @click="store.closeOrderDetail">关闭详情</button>
+                <button class="ghost-btn tiny" @click="store.closeOrderDetail">关闭详情</button>
               </div>
             </aside>
           </div>

@@ -54,10 +54,6 @@ const cart = useCart()
 
       <div class="bill-box compact">
         <div class="bill-grid">
-          <div class="bill-row">
-            <span>小计</span>
-            <strong>{{ formatPrice(cart.subtotal.value) }}</strong>
-          </div>
           <div class="bill-row total">
             <span>合计</span>
             <strong>{{ formatPrice(cart.total.value) }}</strong>

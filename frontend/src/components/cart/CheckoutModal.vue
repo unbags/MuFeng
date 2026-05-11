@@ -62,8 +62,7 @@ const admin = useAdmin()
             </label>
 
             <div class="checkout-bill">
-              <div class="bill-row"><span>商品小计</span><strong>{{ formatPrice(cart.subtotal.value) }}</strong></div>
-              <div class="bill-row total checkout-total"><span>应收合计</span><strong>{{ formatPrice(cart.total.value) }}</strong></div>
+              <div class="bill-row total checkout-total"><span>合计</span><strong>{{ formatPrice(cart.total.value) }}</strong></div>
             </div>
 
             <div class="checkout-actions">

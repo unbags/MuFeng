@@ -107,6 +107,13 @@
   line-height: 1;
 }
 
+.primary-btn.tiny,
+.danger-btn.tiny {
+  padding: 7px 14px;
+  font-size: var(--text-sm);
+  border-radius: var(--radius-sm);
+}
+
 .primary-btn:hover {
   box-shadow: 0 6px 20px rgba(212, 164, 124, 0.40);
   transform: translateY(-1px);
