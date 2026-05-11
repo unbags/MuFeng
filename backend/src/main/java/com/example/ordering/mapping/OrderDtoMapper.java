@@ -15,5 +15,6 @@ public interface OrderDtoMapper {
     @Mapping(target = "name", source = "dishName")
     @Mapping(target = "price", source = "dishPrice")
     @Mapping(target = "total", source = "lineTotal")
+    @Mapping(target = "imageUrl", ignore = true)
     OrderDetailItemResponse toOrderDetailItem(OrderItem item);
 }
