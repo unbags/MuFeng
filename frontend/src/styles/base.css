@@ -22,7 +22,7 @@
   height: 100%;
   padding: 20px;
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto 1fr;
   gap: 16px;
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(24px) saturate(180%);
@@ -34,11 +34,9 @@
 /* Shared surface styles — Apple card aesthetic */
 .sidebar-brand,
 .sidebar-nav,
-.sidebar-overview,
 .screen-page,
 .panel,
 .metric-card,
-.overview-item,
 .dish-card,
 .cart-item,
 .empty-card,
@@ -57,7 +55,6 @@
 }
 
 .sidebar-brand,
-.sidebar-overview,
 .screen-page,
 .panel,
 .modal-card {
@@ -80,7 +77,6 @@
 }
 
 .sidebar-brand p,
-.overview-item span,
 .metric-card span,
 .metric-card small,
 .panel-head small,
@@ -94,8 +90,7 @@
 /* ============================================
    Sidebar brand
    ============================================ */
-.sidebar-brand,
-.sidebar-overview {
+.sidebar-brand {
   padding: 18px;
 }
 
@@ -121,7 +116,7 @@
   align-items: center;
   padding: 5px 12px;
   border-radius: var(--radius-pill);
-  background: rgba(22, 143, 127, 0.1);
+  background: rgba(212, 164, 124, 0.12);
   color: var(--teal);
   letter-spacing: -0.01em;
   font-weight: 600;
@@ -173,63 +168,13 @@
 .nav-item.active {
   background: var(--teal);
   border-color: transparent;
-  box-shadow: 0 4px 14px rgba(22, 143, 127, 0.28);
+  box-shadow: 0 4px 14px rgba(212, 164, 124, 0.32);
   border-radius: var(--radius-md);
 }
 
 .nav-item.active span,
 .nav-item.active small {
   color: #fff;
-}
-
-/* ============================================
-   Sidebar overview
-   ============================================ */
-.sidebar-overview {
-  align-self: end;
-}
-
-.sidebar-section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.sidebar-section-head h2 {
-  margin: 0;
-  color: var(--text);
-  font-size: var(--text-lg);
-}
-
-.sidebar-section-head span {
-  color: var(--muted);
-  font-size: var(--text-base);
-}
-
-.overview-list {
-  display: grid;
-  gap: 8px;
-}
-
-.overview-item {
-  padding: 12px 14px;
-  border-radius: 8px;
-  box-shadow: none;
-  background: var(--surface-soft);
-}
-
-.overview-item span {
-  display: block;
-  font-size: var(--text-sm);
-}
-
-.overview-item strong {
-  display: block;
-  margin-top: 4px;
-  color: var(--text);
-  font-size: var(--text-md);
 }
 
 /* ============================================
