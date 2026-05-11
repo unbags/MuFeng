@@ -15,6 +15,10 @@ const ORDER_STATUS_MAP = {
   PREPARING: '制作中',
   COMPLETED: '已完成',
   CANCELLED: '已取消',
+  // 兼容旧状态
+  CONFIRMED: '待处理',
+  READY: '制作中',
+  DELIVERED: '已完成',
 }
 
 export function formatOrderStatus(status) {

@@ -24,6 +24,10 @@ public enum OrderStatus {
                 return s;
             }
         }
+        // 兼容旧状态映射
+        if ("CONFIRMED".equalsIgnoreCase(value)) return PENDING;
+        if ("READY".equalsIgnoreCase(value)) return PREPARING;
+        if ("DELIVERED".equalsIgnoreCase(value)) return COMPLETED;
         throw new IllegalArgumentException("无效的订单状态: " + value);
     }
 }

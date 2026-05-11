@@ -39,6 +39,13 @@ const nextOrderActions = computed(() => {
       { status: 'CANCELLED', label: '取消订单', reason: '店员取消' },
     ],
     PREPARING: [{ status: 'COMPLETED', label: '已完成' }],
+    // 兼容旧状态
+    CONFIRMED: [
+      { status: 'PREPARING', label: '开始制作' },
+      { status: 'CANCELLED', label: '取消订单', reason: '店员取消' },
+    ],
+    READY: [{ status: 'COMPLETED', label: '已完成' }],
+    DELIVERED: [],
   }
   return actions[status] || []
 })
