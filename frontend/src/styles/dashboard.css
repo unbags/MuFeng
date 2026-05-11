@@ -2,8 +2,8 @@
    Dashboard page theme & overrides
    ============================================ */
 .dashboard-page {
-  --dashboard-teal: #168f7f;
-  --dashboard-coral: #f06f5f;
+  --dashboard-teal: #D4A47C;
+  --dashboard-coral: #E0886E;
   height: 100%;
   min-height: 0;
   grid-template-rows: auto auto minmax(0, 1fr);
@@ -126,7 +126,7 @@
 .range-toggle-btn.active {
   background: #fff;
   color: var(--teal);
-  box-shadow: 0 2px 8px rgba(22, 143, 127, 0.16);
+  box-shadow: 0 2px 8px rgba(212, 164, 124, 0.20);
 }
 
 .dashboard-chart-main .bar-track {

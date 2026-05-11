@@ -2,22 +2,22 @@
    Customer page theme & overrides
    ============================================ */
 .customer-page {
-  --order-accent: #168f7f;
-  --order-accent-strong: #0d6f63;
-  --order-accent-soft: #e8f5f2;
-  --order-accent-glow: rgba(22, 143, 127, 0.22);
-  --order-accent-faint: rgba(22, 143, 127, 0.1);
+  --order-accent: #D4A47C;
+  --order-accent-strong: #B8805A;
+  --order-accent-soft: #FDF1E7;
+  --order-accent-glow: rgba(212, 164, 124, 0.24);
+  --order-accent-faint: rgba(212, 164, 124, 0.12);
   --order-panel: #fff;
   --order-card: #fff;
   background: var(--app-bg);
 }
 
 .customer-page.order-takeout {
-  --order-accent: #f06f5f;
-  --order-accent-strong: #d94b3d;
-  --order-accent-soft: #fff0ee;
-  --order-accent-glow: rgba(240, 111, 95, 0.24);
-  --order-accent-faint: rgba(240, 111, 95, 0.12);
+  --order-accent: #E0886E;
+  --order-accent-strong: #C87860;
+  --order-accent-soft: #FDF3EF;
+  --order-accent-glow: rgba(224, 136, 110, 0.26);
+  --order-accent-faint: rgba(224, 136, 110, 0.14);
 }
 
 /* Panel surfaces — match dashboard cards */
@@ -162,7 +162,7 @@
 .customer-page .note-box textarea:focus,
 .customer-page .checkout-note textarea:focus {
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(22, 143, 127, 0.12);
+  box-shadow: 0 0 0 3px rgba(212, 164, 124, 0.18);
 }
 
 /* Modals — Apple frosted glass */
