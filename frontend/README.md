@@ -1,6 +1,6 @@
 # 沐枫餐饮 - 店员管理端
 
-店员工作台前端应用，提供点餐操作、数据看板和商品管理功能。
+店员工作台前端应用，提供点餐操作、数据看板、商品管理和知识库上传功能。
 
 ## 技术栈
 
@@ -15,39 +15,40 @@
 ```
 frontend/
 ├── src/
-│   ├── api/              # API 请求模块（auth、menu、orders、dishes、categories、dashboard）
-│   ├── components/        # 可复用组件
+│   ├── api/              # API 请求模块（auth、menu、orders、dishes、categories、dashboard、knowledge）
+│   ├── components/
 │   │   ├── admin/         # 管理端组件（菜品卡片、表单弹窗、图片上传等）
 │   │   ├── cart/          # 购物车组件（面板、结算弹窗、小票弹窗）
 │   │   ├── dashboard/     # 仪表盘组件（指标卡片、图表、订单类型分布）
 │   │   ├── layout/        # 布局组件（侧边栏、Toast、Loading）
 │   │   ├── menu/          # 菜单组件（菜品卡片、点餐类型切换）
 │   │   └── ui/            # 通用 UI 组件（分页、数量控制、空状态、图片容错）
-│   ├── composables/       # 组合式函数（状态管理、购物车、菜单、订单、认证等）
-│   ├── config/            # 常量配置
-│   ├── router/            # 路由定义
-│   ├── styles/            # 样式文件（CSS Token、布局、组件、响应式、动画）
-│   ├── utils/             # 工具函数（格式化、数据规范化）
-│   ├── views/             # 页面视图（工作台、管理端、登录、注册、仪表盘、404）
+│   ├── composables/       # 组合式函数（state、useOrderingStore、useAuth、useCart、useMenu、useAdmin、useOrders、useDashboard、useToast、useKnowledge）
+│   ├── config/            # 常量配置（分页、费用、提示时长、HTTP 错误消息）
+│   ├── router/            # 路由定义（含 beforeEach 认证守卫）
+│   ├── styles/            # 样式文件（tokens、reset、base、layout、components、customer、admin、dashboard、animations、responsive）
+│   ├── utils/             # 工具函数（format、normalize）
+│   ├── views/             # 页面视图（Login、Register、Customer、Dashboard、Admin、Knowledge、NotFound）
 │   ├── App.vue            # 根组件
 │   └── main.js            # 应用入口
 ├── index.html             # HTML 入口
-├── vite.config.js         # Vite 配置
+├── vite.config.js         # Vite 配置（端口 7777，代理 /api -> localhost:8080）
 └── package.json           # 依赖与脚本
 ```
 
 ## 页面路由
 
-| 路径 | 视图 | 说明 |
-|------|------|------|
-| `/login` | LoginView | 管理员登录 |
-| `/register` | RegisterView | 首次初始化管理员账号 |
-| `/workbench` | CustomerView | 点餐工作台 |
-| `/dashboard` | DashboardView | 数据看板 |
-| `/products` | AdminView | 菜品/分类管理 |
-| `/:pathMatch(.*)*` | NotFoundView | 404 页面 |
+| 路径 | 视图 | 说明 | 认证 |
+|------|------|------|------|
+| `/login` | LoginView | 管理员登录 | 否 |
+| `/register` | RegisterView | 首次注册管理员 | 否 |
+| `/workbench` | CustomerView | 点餐工作台 | 是 |
+| `/dashboard` | DashboardView | 数据看板 | 是 |
+| `/products` | AdminView | 菜品/分类管理 | 是 |
+| `/knowledge` | KnowledgeView | 知识库文件上传 | 是 |
+| `/:pathMatch(.*)*` | NotFoundView | 404 | 否 |
 
-未登录状态下所有页面均自动跳转到 `/login`。
+路由守卫：未登录访问需认证页面 → 跳转 `/login?redirect=...`；已登录访问登录页 → 跳转 `/dashboard`。
 
 ## 环境要求
 
@@ -70,7 +71,7 @@ npm run dev
 
 默认访问 `http://localhost:7777`。
 
-开发服务器内置 API 代理：所有 `/api/*` 请求会被转发到 `http://localhost:8080`（后端服务）。无需额外配置 CORS。
+开发服务器内置 API 代理：`/api/*` 请求转发到 `http://localhost:8080`。
 
 ### 3. 构建生产版本
 
@@ -78,26 +79,19 @@ npm run dev
 npm run build
 ```
 
-构建产物输出到 `dist/` 目录。
-
-### 4. 预览生产版本
-
-```bash
-npm run preview
-```
+构建产物输出到 `dist/`。
 
 ## 生产部署
 
-### 方式一：Nginx 静态部署（推荐）
+### Nginx 静态部署（推荐）
 
-构建后将 `dist/` 目录部署到服务器，使用 Nginx 做静态文件服务 + 反向代理：
+构建后将 `dist/` 部署到服务器：
 
 ```nginx
 server {
     listen       80;
-    server_name  your-domain.com;
+    server_name  admin.your-domain.com;
 
-    # 静态资源
     root   /opt/ordering/frontend/dist;
     index  index.html;
 
@@ -106,16 +100,15 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # API 反向代理到后端
+    # API 反向代理
     location /api/ {
         proxy_pass         http://127.0.0.1:8080;
         proxy_set_header   Host              $host;
         proxy_set_header   X-Real-IP         $remote_addr;
         proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
     }
 
-    # WebSocket 代理（订单状态实时推送）
+    # WebSocket 代理
     location /ws/ {
         proxy_pass         http://127.0.0.1:8080;
         proxy_http_version 1.1;
@@ -133,10 +126,9 @@ server {
 }
 ```
 
-### 方式二：Docker 部署
+### Docker 部署
 
 ```dockerfile
-# 构建阶段
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY package*.json ./
@@ -144,7 +136,6 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# 生产阶段
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -156,16 +147,9 @@ docker build -t mufeng-frontend .
 docker run -d -p 80:80 --name mufeng-frontend mufeng-frontend
 ```
 
-### 方式三：Vite 预览服务器（仅小规模/内部使用）
-
-```bash
-npm run build
-npm run preview -- --host 0.0.0.0 --port 4173
-```
-
 ## 架构说明
 
-- **状态管理**：基于 Vue 3 Composition API 的 `composables` 模式，使用 `provide/inject` 实现跨组件共享（参见 [composables/state.js](src/composables/state.js)）
-- **API 层**：统一封装在 [api/](src/api/) 目录，使用 fetch API，集中管理请求头和错误处理
-- **样式系统**：CSS 自定义属性（设计令牌）定义在 [styles/tokens.css](src/styles/tokens.css)，组件样式按模块拆分
-- **实时通信**：WebSocket 用于订单状态变更的实时推送通知
+- **状态管理**：基于 Vue 3 Composition API 的 composables 模式，`useOrderingStore` 为中央编排器，通过 `provide/inject` 跨组件共享
+- **API 层**：统一封装 fetch 请求，自动注入 JWT Bearer Token，401 时自动跳转登录页
+- **样式系统**：10 个 CSS 文件按职责拆分，设计令牌统一定义在 `tokens.css`（暖色调 Apple 风格）
+- **实时通信**：STOMP over WebSocket 连接 `/ws`，订阅 `/topic/orders/new`、`/topic/orders/status`、`/topic/dashboard`

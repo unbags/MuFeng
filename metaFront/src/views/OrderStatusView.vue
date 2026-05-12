@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchOrder } from '../api/orders.js'
 
@@ -7,17 +7,24 @@ const route = useRoute()
 const order = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
+let pollTimer = null
 
 const statusText = computed(() => {
   const map = {
     PENDING: '待接单',
-    CONFIRMED: '已接单',
     PREPARING: '制作中',
-    READY: '待取餐',
-    DELIVERED: '已完成',
+    COMPLETED: '已完成',
     CANCELLED: '已取消',
   }
   return map[order.value?.status] || order.value?.status || '--'
+})
+
+const paymentStatusText = computed(() => {
+  const map = {
+    PAID: '已支付',
+    UNPAID: '未支付',
+  }
+  return map[order.value?.paymentStatus] || order.value?.paymentStatus || '未支付'
 })
 
 async function loadOrder() {
@@ -32,7 +39,17 @@ async function loadOrder() {
   }
 }
 
-onMounted(loadOrder)
+onMounted(() => {
+  loadOrder()
+  pollTimer = setInterval(loadOrder, 15000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+})
 </script>
 
 <template>
@@ -61,7 +78,7 @@ onMounted(loadOrder)
           </div>
           <div>
             <dt>支付状态</dt>
-            <dd>{{ order.paymentStatus || 'UNPAID' }}</dd>
+            <dd>{{ paymentStatusText }}</dd>
           </div>
           <div>
             <dt>合计</dt>

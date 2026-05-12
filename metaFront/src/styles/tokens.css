@@ -31,8 +31,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 8% 8%, rgba(191, 232, 239, 0.7), transparent 25rem),
-    radial-gradient(circle at 90% 4%, rgba(255, 217, 223, 0.72), transparent 24rem),
+    radial-gradient(circle at 8% 8%, var(--accent-cool), transparent 25rem),
+    radial-gradient(circle at 90% 4%, var(--accent-rose), transparent 24rem),
     linear-gradient(135deg, #ffffff 0%, #eef8fb 48%, #fff7f8 100%);
 }
 

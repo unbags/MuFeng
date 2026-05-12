@@ -1,7 +1,8 @@
 import { computed, ref, watch } from 'vue'
-import { createOrder } from '../api/orders.js'
+import { createOrder, fetchOrder } from '../api/orders.js'
 
 const CART_STORAGE_KEY = 'mufeng_customer_cart'
+const ORDER_HISTORY_KEY = 'mufeng_order_history'
 const CART_VERSION = 1
 
 // --- state ---
@@ -14,6 +15,9 @@ const note = ref('')
 const isSubmitting = ref(false)
 const lastOrder = ref(null)
 const showReceipt = ref(false)
+const showOrderList = ref(false)
+const orderHistory = ref([])
+const isLoadingOrders = ref(false)
 
 // --- localStorage ---
 function loadCart() {
@@ -61,7 +65,9 @@ function addToCart(dish) {
   } else {
     cart.value.push({ ...dish, quantity: 1 })
   }
-  isCartOpen.value = true
+  if (!isCartOpen.value) {
+    isCartOpen.value = true
+  }
   saveCart()
 }
 
@@ -82,7 +88,6 @@ function decreaseQuantity(dishId) {
 }
 
 function openCart() {
-  if (cartCount.value === 0) return
   isCartOpen.value = true
 }
 
@@ -104,6 +109,7 @@ function setOrderType(type) {
 // --- submit ---
 async function submitOrder() {
   if (!cart.value.length) return
+  if (isSubmitting.value) return
   if (orderType.value === 'dine_in' && !tableNumber.value.trim()) {
     throw new Error('请先输入桌号')
   }
@@ -128,6 +134,7 @@ async function submitOrder() {
     lastOrder.value = response
     pickupNumber.value = response.pickupNumber || ''
     showReceipt.value = true
+    if (response.orderNo) saveOrderToHistory(response.orderNo)
     isCartOpen.value = false
 
     clearCartSilent()
@@ -151,6 +158,64 @@ function clearCart() {
 
 function closeReceipt() {
   showReceipt.value = false
+}
+
+// --- order history ---
+function loadOrderHistory() {
+  try {
+    const raw = localStorage.getItem(ORDER_HISTORY_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function saveOrderToHistory(orderNo) {
+  try {
+    const list = loadOrderHistory()
+    if (!list.includes(orderNo)) {
+      list.unshift(orderNo)
+      if (list.length > 20) list.length = 20
+      localStorage.setItem(ORDER_HISTORY_KEY, JSON.stringify(list))
+    }
+  } catch { /* ignore */ }
+}
+
+async function fetchOrderHistory() {
+  const orderNos = loadOrderHistory()
+  if (!orderNos.length) {
+    orderHistory.value = []
+    return
+  }
+
+  isLoadingOrders.value = true
+  try {
+    const results = await Promise.allSettled(
+      orderNos.map((no) => fetchOrder(no))
+    )
+    orderHistory.value = results
+      .map((result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value
+        }
+        return { orderNo: orderNos[index], status: null, _error: true }
+      })
+      .filter((o) => o !== null)
+  } catch {
+    orderHistory.value = []
+  } finally {
+    isLoadingOrders.value = false
+  }
+}
+
+function openOrderList() {
+  showOrderList.value = true
+  isCartOpen.value = true
+  fetchOrderHistory()
+}
+
+function closeOrderList() {
+  showOrderList.value = false
 }
 
 // --- init ---
@@ -183,6 +248,9 @@ export function useCart() {
     isSubmitting,
     lastOrder,
     showReceipt,
+    showOrderList,
+    orderHistory,
+    isLoadingOrders,
     addToCart,
     removeFromCart,
     decreaseQuantity,
@@ -192,5 +260,7 @@ export function useCart() {
     submitOrder,
     clearCart,
     closeReceipt,
+    openOrderList,
+    closeOrderList,
   }
 }

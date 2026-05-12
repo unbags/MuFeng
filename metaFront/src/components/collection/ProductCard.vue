@@ -16,8 +16,8 @@ function onCardClick() {
 </script>
 
 <template>
-  <article class="product-card" :class="{ selected }" @click="onCardClick">
-    <img :src="product.image" :alt="product.title" />
+  <article class="product-card" :class="{ selected }" role="button" tabindex="0" @click="onCardClick" @keydown.enter="onCardClick" @keydown.space.prevent="onCardClick">
+    <img :src="product.image" :alt="product.title" loading="lazy" />
     <div class="product-card-body">
       <span>{{ product.categoryLabel }}</span>
       <h3>{{ product.title }}</h3>

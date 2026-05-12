@@ -35,33 +35,33 @@ spring:
           max-wait: 2000ms
   ai:
     model:
-      chat: ${SPRING_AI_MODEL_CHAT:deepseek}
-      embedding: ${SPRING_AI_MODEL_EMBEDDING:dashscope}
+      chat: openai
+      embedding: dashscope
     openai:
       api-key: ${DEEPSEEK_API_KEY:}
-      base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+      base-url: https://api.deepseek.com
       chat:
         options:
-          model: ${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL:deepseek-v4-pro}
+          model: deepseek-v4-pro
     dashscope:
       api-key: ${DASHSCOPE_API_KEY:}
       embedding:
         options:
-          model: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v4}
+          model: text-embedding-v4
     vectorstore:
-      type: ${SPRING_AI_VECTORSTORE_TYPE:none}
+      type: milvus
       milvus:
         client:
-          host: ${MILVUS_HOST:localhost}
-          port: ${MILVUS_PORT:19530}
-          username: ${MILVUS_USERNAME:root}
-          password: ${MILVUS_PASSWORD:Milvus}
-        database-name: ${MILVUS_DATABASE_NAME:default}
-        collection-name: ${MILVUS_COLLECTION_NAME:mufeng_kb}
-        embedding-dimension: ${MILVUS_EMBEDDING_DIMENSION:1024}
-        index-type: ${MILVUS_INDEX_TYPE:IVF_FLAT}
-        metric-type: ${MILVUS_METRIC_TYPE:COSINE}
-        initialize-schema: ${SPRING_AI_VECTORSTORE_MILVUS_INITIALIZE_SCHEMA:false}
+          host: localhost
+          port: 19530
+          username: root
+          password: Milvus
+        database-name: default
+        collection-name: mufeng_kb
+        embedding-dimension: 1024
+        index-type: IVF_FLAT
+        metric-type: COSINE
+        initialize-schema: true
 
 app:
   # admin credentials are now stored in the users database table
@@ -79,17 +79,17 @@ app:
   storage:
     image-dir: src/main/resources/images
   ai:
-    enabled: ${APP_AI_ENABLED:false}
+    enabled: true
     rag:
-      enabled: ${APP_AI_RAG_ENABLED:false}
-      top-k: ${APP_AI_RAG_TOP_K:5}
-      similarity-threshold: ${APP_AI_RAG_SIMILARITY_THRESHOLD:0.65}
+      enabled: true
+      top-k: 5
+      similarity-threshold: 0.65
     tools:
-      enabled: ${APP_AI_TOOLS_ENABLED:false}
-      audit-enabled: ${APP_AI_TOOLS_AUDIT_ENABLED:true}
+      enabled: false
+      audit-enabled: true
     prompt:
-      version: ${APP_AI_PROMPT_VERSION:v1}
-      location: ${APP_AI_PROMPT_LOCATION:classpath:/prompts}
+      version: v1
+      location: classpath:/prompts
 
 mybatis-plus:
   configuration:

@@ -7,7 +7,7 @@ const props = defineProps({
   dishId: { type: [Number, String], required: true },
 })
 
-const { getProductById, loadProducts, isLoading } = useProducts()
+const { getProductById, loadProducts, isLoading, errorMessage } = useProducts()
 const dish = computed(() => getProductById(props.dishId))
 
 const { addToCart } = useCart()
@@ -50,7 +50,8 @@ onMounted(() => {
   </section>
 
   <section v-else class="not-found">
-    <h2>菜品未找到</h2>
+    <h2>{{ errorMessage ? '菜单加载失败' : '菜品未找到' }}</h2>
+    <p v-if="errorMessage">{{ errorMessage }}</p>
     <router-link to="/menu">返回菜单</router-link>
   </section>
 </template>

@@ -7,25 +7,35 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@ConditionalOnBean(VectorStore.class)
 public class KnowledgeIngestionService {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeIngestionService.class);
+    public static final String VECTOR_STORE_UNAVAILABLE_MESSAGE =
+        "知识库向量服务未启用，请确认 application.yml 已配置 spring.ai.vectorstore.type=milvus，并已配置 DashScope API Key、启动 Milvus";
 
-    private final VectorStore vectorStore;
+    private final ObjectProvider<VectorStore> vectorStoreProvider;
 
-    public KnowledgeIngestionService(VectorStore vectorStore) {
-        this.vectorStore = vectorStore;
+    public KnowledgeIngestionService(ObjectProvider<VectorStore> vectorStoreProvider) {
+        this.vectorStoreProvider = vectorStoreProvider;
     }
 
     /**
-     * 将知识文档写入向量库，并返回实际写入的文档数量。
+     * 判断当前运行环境是否已经创建向量库 Bean。
+     */
+    public boolean isAvailable() {
+        return vectorStoreProvider.getIfAvailable() != null;
+    }
+
+    private static final int EMBEDDING_BATCH_SIZE = 10;
+
+    /**
+     * 将知识文档分批写入向量库，每批最多 {@value #EMBEDDING_BATCH_SIZE} 条以符合 DashScope embedding API 限制。
      */
     public int ingest(List<KnowledgeDocument> documents) {
         if (documents == null || documents.isEmpty()) {
@@ -36,8 +46,15 @@ public class KnowledgeIngestionService {
             .map(document -> new Document(document.content(), document.metadata()))
             .toList();
 
-        vectorStore.add(springAiDocuments);
-        return springAiDocuments.size();
+        int total = 0;
+        for (int i = 0; i < springAiDocuments.size(); i += EMBEDDING_BATCH_SIZE) {
+            int end = Math.min(i + EMBEDDING_BATCH_SIZE, springAiDocuments.size());
+            List<Document> batch = springAiDocuments.subList(i, end);
+            vectorStore().add(batch);
+            total += batch.size();
+            log.debug("Ingested batch {}-{} of {} documents", i + 1, end, springAiDocuments.size());
+        }
+        return total;
     }
 
     /**
@@ -45,6 +62,7 @@ public class KnowledgeIngestionService {
      */
     public void clear() {
         try {
+            VectorStore vectorStore = vectorStore();
             Object nativeClient = vectorStore.getNativeClient().orElse(null);
             if (nativeClient instanceof MilvusServiceClient milvusClient) {
                 milvusClient.dropCollection(DropCollectionParam.newBuilder()
@@ -64,5 +82,13 @@ public class KnowledgeIngestionService {
             log.error("Failed to clear knowledge base. "
                 + "Restart the application or manually drop the collection 'mufeng_kb'.", e);
         }
+    }
+
+    private VectorStore vectorStore() {
+        VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
+        if (vectorStore == null) {
+            throw new IllegalStateException(VECTOR_STORE_UNAVAILABLE_MESSAGE);
+        }
+        return vectorStore;
     }
 }

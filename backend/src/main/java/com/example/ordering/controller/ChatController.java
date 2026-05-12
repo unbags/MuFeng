@@ -38,6 +38,8 @@ public class ChatController {
      */
     @PostMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> stream(@Valid @RequestBody ChatRequest request) {
-        return aiAssistantService.stream(request);
+        return aiAssistantService.stream(request)
+            .map(chunk -> "data:" + chunk + "\n\n")
+            .concatWithValues("data:[DONE]\n\n");
     }
 }

@@ -1,12 +1,11 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import CategoryTabs from '../components/collection/CategoryTabs.vue'
 import SearchBox from '../components/collection/SearchBox.vue'
 import ProductGrid from '../components/collection/ProductGrid.vue'
 import { useProducts } from '../composables/useProducts.js'
 
-const selectedId = ref(null)
 const router = useRouter()
 const { loadProducts } = useProducts()
 
@@ -15,7 +14,6 @@ onMounted(() => {
 })
 
 function onSelect(product) {
-  selectedId.value = product.id
   router.push(`/menu/${product.id}`)
 }
 </script>
@@ -32,7 +30,7 @@ function onSelect(product) {
       <SearchBox />
     </div>
 
-    <ProductGrid :selected-id="selectedId" @select="onSelect" />
+    <ProductGrid @select="onSelect" />
   </section>
 </template>
 

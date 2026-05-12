@@ -23,7 +23,7 @@ public class RecommendTools {
     /**
      * 根据用餐人数、预算、忌口和口味偏好推荐菜品。
      */
-    @Tool(description = "根据顾客的人数、忌口、预算和口味偏好推荐菜品。不会推荐已下架菜品。")
+    @Tool(description = "Recommend dishes based on party size, budget, dietary restrictions, and taste preferences. Call when user asks for recommendations. 根据人数/预算/忌口/口味推荐菜品。")
     public RecommendResponse recommendDishes(RecommendRequest request) {
         List<DishResponse> dishes = currentDishes();
         if (dishes.isEmpty()) {

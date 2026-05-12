@@ -4,20 +4,15 @@ import com.example.ordering.ai.assistant.AiAssistantProperties;
 import com.example.ordering.service.MenuService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
-@ConditionalOnBean(VectorStore.class)
-public class
-
-KnowledgeRefreshRunner implements ApplicationRunner {
+public class KnowledgeRefreshRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeRefreshRunner.class);
 
@@ -45,12 +40,23 @@ KnowledgeRefreshRunner implements ApplicationRunner {
             log.info("RAG is disabled, skipping knowledge initialization");
             return;
         }
+        if (!ingestionService.isAvailable()) {
+            log.warn("Knowledge initialization skipped: {}", KnowledgeIngestionService.VECTOR_STORE_UNAVAILABLE_MESSAGE);
+            return;
+        }
 
         try {
             ingestionService.clear();
-            List<KnowledgeDocument> documents = documentBuilder.fromMenu(menuService.getMenu());
-            int count = ingestionService.ingest(documents);
-            log.info("Knowledge initialization complete: {} documents indexed", count);
+
+            List<KnowledgeDocument> menuDocuments = documentBuilder.fromMenu(menuService.getMenu());
+            List<KnowledgeDocument> bizDocuments = documentBuilder.fromMarkdownResource();
+
+            List<KnowledgeDocument> allDocuments = new ArrayList<>(menuDocuments);
+            allDocuments.addAll(bizDocuments);
+
+            int count = ingestionService.ingest(allDocuments);
+            log.info("Knowledge initialization complete: {} documents indexed ({} dishes + {} business rules)",
+                count, menuDocuments.size(), bizDocuments.size());
         } catch (Exception e) {
             log.error("Knowledge initialization failed, RAG will not be available. "
                 + "Retry from an operations task after the vector store is available.", e);

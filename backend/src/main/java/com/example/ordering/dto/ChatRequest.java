@@ -10,6 +10,9 @@ public class ChatRequest {
     @Size(max = 32, message = "订单号不能超过32个字符")
     private String orderNo;
 
+    @Size(max = 64, message = "会话ID不能超过64个字符")
+    private String conversationId;
+
     public ChatRequest() {
     }
 
@@ -32,5 +35,13 @@ public class ChatRequest {
 
     public void setOrderNo(String orderNo) {
         this.orderNo = orderNo;
+    }
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(String conversationId) {
+        this.conversationId = conversationId;
     }
 }

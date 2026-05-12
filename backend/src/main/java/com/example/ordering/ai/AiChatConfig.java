@@ -1,6 +1,10 @@
 package com.example.ordering.ai;
 
 import com.example.ordering.ai.assistant.AiAssistantProperties;
+import com.example.ordering.ai.tools.BusinessRuleTools;
+import com.example.ordering.ai.tools.MenuTools;
+import com.example.ordering.ai.tools.OrderTools;
+import com.example.ordering.ai.tools.RecommendTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -10,15 +14,12 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 @ConditionalOnProperty(name = "app.ai.enabled", havingValue = "true")
@@ -33,30 +34,39 @@ public class AiChatConfig {
     public ChatMemory chatMemory() {
         return MessageWindowChatMemory.builder()
             .chatMemoryRepository(new InMemoryChatMemoryRepository())
-            .maxMessages(10)
+            .maxMessages(6)
             .build();
     }
 
     /**
-     * 创建 AI 聊天客户端，并按配置挂载记忆、知识库检索和工具调用能力。
+     * 创建知识库检索增强顾问，仅在 RAG_FIRST 路由时按请求挂载，避免干扰工具调用。
      */
+    @Bean
+    @ConditionalOnBean(VectorStore.class)
+    public QuestionAnswerAdvisor questionAnswerAdvisor(VectorStore vectorStore) {
+        return QuestionAnswerAdvisor.builder(vectorStore).build();
+    }
+
     @Bean
     @ConditionalOnBean(ChatModel.class)
     public ChatClient chatClient(ChatModel chatModel,
                                   ChatMemory chatMemory,
                                   AiAssistantProperties properties,
                                   ObjectProvider<VectorStore> vectorStoreProvider,
-                                  ObjectProvider<ToolCallback> toolCallbackProvider) {
+                                  MenuTools menuTools,
+                                  OrderTools orderTools,
+                                  BusinessRuleTools businessRuleTools,
+                                  RecommendTools recommendTools) {
 
         ChatClient.Builder builder = ChatClient.builder(chatModel);
 
         builder.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build());
 
+        // RAG advisor 不作为 defaultAdvisor，改为按请求路由在 AiAssistantService 中挂载
+
         if (properties.getRag().isEnabled()) {
             VectorStore vectorStore = vectorStoreProvider.getIfAvailable();
-            if (vectorStore != null) {
-                builder.defaultAdvisors(QuestionAnswerAdvisor.builder(vectorStore).build());
-            } else {
+            if (vectorStore == null) {
                 log.warn("RAG is enabled (app.ai.rag.enabled=true) but no VectorStore bean is available. "
                     + "Check that spring.ai.model.embedding is set to a valid embedding model "
                     + "and spring.ai.vectorstore.type is set to milvus.");
@@ -64,10 +74,8 @@ public class AiChatConfig {
         }
 
         if (properties.getTools().isEnabled()) {
-            List<ToolCallback> toolCallbacks = toolCallbackProvider.stream().toList();
-            if (!toolCallbacks.isEmpty()) {
-                builder.defaultToolCallbacks(toolCallbacks);
-            }
+            builder.defaultTools(menuTools, orderTools, businessRuleTools, recommendTools);
+            log.info("AI tools registered: getMenu, searchDishes, getOrderStatus, getBusinessRules, recommendDishes");
         }
 
         return builder.build();

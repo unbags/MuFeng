@@ -128,11 +128,6 @@
             <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
             <version>${spring-ai-alibaba.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba.cloud.ai</groupId>
-            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
-            <version>${spring-ai-alibaba.version}</version>
-        </dependency>
         <!-- Document parsing (PDF, DOCX, MD, TXT, etc.) -->
         <dependency>
             <groupId>org.apache.tika</groupId>

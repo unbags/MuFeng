@@ -25,11 +25,13 @@ class MilvusAutoConfigurationSafetyTest {
         );
 
     @Test
-    void defaultApplicationConfigDoesNotCreateMilvusClient() {
-        contextRunner.run(context -> {
-            assertThat(context).hasNotFailed();
-            assertThat(context).doesNotHaveBean(MilvusServiceClient.class);
-        });
+    void explicitNoneVectorStoreTypeDoesNotCreateMilvusClient() {
+        contextRunner
+            .withPropertyValues("spring.ai.vectorstore.type=none")
+            .run(context -> {
+                assertThat(context).hasNotFailed();
+                assertThat(context).doesNotHaveBean(MilvusServiceClient.class);
+            });
     }
 
     @Configuration(proxyBeanMethods = false)

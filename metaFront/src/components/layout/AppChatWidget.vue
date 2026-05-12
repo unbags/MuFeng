@@ -7,6 +7,7 @@ const {
   isSupportOpen,
   supportInput,
   supportMessages,
+  quickQuestions,
   isSending,
   isStreaming,
   askSupport,
@@ -21,7 +22,9 @@ const messagesEl = ref(null)
 function scrollToBottom() {
   nextTick(() => {
     const el = messagesEl.value
-    if (el) el.scrollTop = el.scrollHeight
+    if (!el) return
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    if (nearBottom) el.scrollTop = el.scrollHeight
   })
 }
 
@@ -62,11 +65,23 @@ watch(scrollTrigger, () => scrollToBottom())
         </article>
       </div>
 
+      <div v-if="quickQuestions.length && !isStreaming && supportMessages.length <= 1" class="quick-questions">
+        <button
+          v-for="q in quickQuestions"
+          :key="q"
+          type="button"
+          class="quick-btn"
+          @click="askSupport(q)"
+        >
+          {{ q }}
+        </button>
+      </div>
+
       <form class="support-input" @submit.prevent="askSupport()">
         <input
           v-model="supportInput"
           type="text"
-          placeholder="输入关于菜品、口味或配送的问题"
+          placeholder="输入关于菜品、口味或订单的问题"
           :disabled="isSending"
         />
         <button type="submit" :disabled="isSending">
@@ -219,6 +234,30 @@ watch(scrollTrigger, () => scrollToBottom())
 .support-input button:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.quick-questions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0 4px;
+}
+
+.quick-btn {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.quick-btn:hover {
+  background: rgba(255, 255, 255, 0.84);
+  border-color: var(--accent);
 }
 
 @media (max-width: 560px) {

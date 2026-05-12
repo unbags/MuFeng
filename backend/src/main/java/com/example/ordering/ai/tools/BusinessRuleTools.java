@@ -1,7 +1,6 @@
 package com.example.ordering.ai.tools;
 
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -9,23 +8,14 @@ import java.math.BigDecimal;
 @Component
 public class BusinessRuleTools {
 
-    private final BigDecimal deliveryFee;
-
-    public BusinessRuleTools(
-        @Value("${app.order.delivery-fee:4.00}") BigDecimal deliveryFee
-    ) {
-        this.deliveryFee = deliveryFee;
-    }
-
     /**
      * 查询点餐业务规则和费用配置，供 AI 助手回答规则问题。
      */
-    @Tool(description = "查询点餐业务规则，包括配送费、取餐和订单状态说明。")
+    @Tool(description = "Get business rules: pickup methods, payment options, business hours, order status explanations, and refund policy. Call when user asks about these topics. 查询取餐/支付/营业时间/退款等业务规则。")
     public BusinessRuleToolResponse getBusinessRules() {
         return new BusinessRuleToolResponse(
             BigDecimal.ZERO,
-            deliveryFee,
-            "订单完成后可准备取餐；具体取餐与价格信息以页面实时展示为准。"
+            "堂食请到店用餐，外带到店自取出餐号无额外费用。支持微信支付和支付宝在线支付，也可到店现金或刷卡。午餐11:00-14:00，晚餐17:00-21:30。订单提交后无法在线修改或退款，需联系店员处理。具体信息以页面实时展示为准。"
         );
     }
 }

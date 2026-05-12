@@ -1,6 +1,4 @@
-import { request } from './index.js'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+import { request, API_BASE } from './index.js'
 
 export function queryChat(payload) {
   return request('/chat/query', {

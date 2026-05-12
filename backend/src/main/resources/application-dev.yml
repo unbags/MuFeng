@@ -6,4 +6,10 @@ spring:
   ai:
     vectorstore:
       milvus:
-        initialize-schema: ${SPRING_AI_VECTORSTORE_MILVUS_INITIALIZE_SCHEMA:true}
+        initialize-schema: true
+
+logging:
+  level:
+    org.springframework.ai.openai: DEBUG
+    org.springframework.ai.chat.client: DEBUG
+    com.example.ordering.ai: DEBUG

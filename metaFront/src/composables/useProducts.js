@@ -9,14 +9,16 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 
 function normalizeDish(dish, categoryLabels) {
+  const rawPrice = Number(dish.price)
+  if (dish.price != null && !Number.isFinite(rawPrice)) {
+    console.warn('[metaFront] 菜品价格无效:', dish.id, dish.name, dish.price)
+  }
   return {
     id: dish.id,
     title: dish.name,
     category: dish.category,
     categoryLabel: dish.categoryLabel || categoryLabels[dish.category] || dish.category,
-    price: Number(dish.price) || 0,
-    rating: dish.rating,
-    calories: dish.calories,
+    price: Number.isFinite(rawPrice) ? rawPrice : 0,
     ingredients: dish.description || '',
     flavor: dish.highlight || dish.description || '店内精选',
     desc: dish.description || '',

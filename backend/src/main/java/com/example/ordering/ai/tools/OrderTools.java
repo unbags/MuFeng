@@ -17,7 +17,7 @@ public class OrderTools {
     /**
      * 根据订单号查询订单实时状态，供 AI 助手回答订单进度问题。
      */
-    @Tool(description = "根据订单号查询订单实时状态。用户询问订单进度、制作状态或取餐状态时必须使用此工具。")
+    @Tool(description = "Look up the real-time status of an order by its order number. Call when the user provides an order number or asks about order progress. 根据订单号查询订单实时状态。")
     public OrderStatusToolResponse getOrderStatus(OrderStatusToolRequest request) {
         String orderNo = request.orderNo() == null ? "" : request.orderNo().trim();
         OrderDetailResponse order = orderService.getOrder(orderNo);
@@ -33,6 +33,9 @@ public class OrderTools {
         }
         if ("PREPARING".equals(status)) {
             return "后厨正在制作，请稍等。";
+        }
+        if ("READY".equals(status)) {
+            return "订单已备好，可以准备取餐。";
         }
         if ("COMPLETED".equals(status)) {
             return "订单已完成。";

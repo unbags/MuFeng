@@ -27,6 +27,16 @@ class AiAssistantPropertiesTest {
     }
 
     @Test
+    void resolvesLlmOnlyModeWhenAiIsEnabledWithoutRagOrTools() {
+        AiAssistantProperties properties = new AiAssistantProperties();
+        properties.setEnabled(true);
+        properties.getRag().setEnabled(false);
+        properties.getTools().setEnabled(false);
+
+        assertThat(properties.resolveMode()).isEqualTo(AssistantMode.LLM_ONLY);
+    }
+
+    @Test
     void resolvesFullAiModeWhenAiRagAndToolsAreEnabled() {
         AiAssistantProperties properties = new AiAssistantProperties();
         properties.setEnabled(true);

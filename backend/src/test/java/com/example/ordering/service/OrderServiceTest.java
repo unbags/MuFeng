@@ -69,7 +69,6 @@ class OrderServiceTest {
             idGenerator,
             orderWriteGuard,
             notificationService,
-            new BigDecimal("2.00"),
             new BigDecimal("4.00")
         );
     }

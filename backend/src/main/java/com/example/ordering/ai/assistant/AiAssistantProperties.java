@@ -22,7 +22,7 @@ public class AiAssistantProperties {
         if (rag.enabled) {
             return AssistantMode.RAG_ONLY;
         }
-        return AssistantMode.RULE_BASED;
+        return AssistantMode.LLM_ONLY;
     }
 
     public boolean isEnabled() {

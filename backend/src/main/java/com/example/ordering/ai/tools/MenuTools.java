@@ -21,7 +21,7 @@ public class MenuTools {
     /**
      * 查询当前可售菜单，供 AI 助手回答菜单类问题。
      */
-    @Tool(description = "查询当前可售菜单和菜品信息。适用于用户询问当前有哪些菜、价格、分类或推荐候选。")
+    @Tool(description = "Query the full available menu with all dishes, categories, and prices. Call this when the user asks about menu, dishes, what's available, or what to eat. 查询当前完整可售菜单。")
     public MenuToolResponse getMenu() {
         return new MenuToolResponse(currentDishes().stream().map(this::toToolItem).toList());
     }
@@ -29,7 +29,7 @@ public class MenuTools {
     /**
      * 按关键词、分类和预算搜索当前可售菜品。
      */
-    @Tool(description = "按关键词、分类和最高预算搜索当前可售菜品。不会返回已下架菜品。")
+    @Tool(description = "Search dishes by keyword, category, and/or max budget. Call when user asks about specific dish types, categories, or has price constraints. 按关键词/分类/预算搜索菜品。")
     public DishSearchResponse searchDishes(DishSearchRequest request) {
         String keyword = normalize(request.keyword());
         String category = normalize(request.category());

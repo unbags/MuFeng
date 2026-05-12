@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useCart } from '../../composables/useCart.js'
+import { NOTE_MAX_LENGTH } from '../../config/constants.js'
 
 const {
   cart,
@@ -15,6 +16,9 @@ const {
   isSubmitting,
   lastOrder,
   showReceipt,
+  showOrderList,
+  orderHistory,
+  isLoadingOrders,
   addToCart,
   removeFromCart,
   decreaseQuantity,
@@ -23,9 +27,21 @@ const {
   submitOrder,
   clearCart,
   closeReceipt,
+  openOrderList,
+  closeOrderList,
 } = useCart()
 
 const errorMessage = ref('')
+
+function statusLabel(status) {
+  const map = {
+    PENDING: '待接单',
+    PREPARING: '制作中',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消',
+  }
+  return map[status] || status || '--'
+}
 
 async function onConfirm() {
   errorMessage.value = ''
@@ -40,24 +56,59 @@ function onClose() {
   if (showReceipt.value) {
     closeReceipt()
   }
+  closeOrderList()
   closeCart()
 }
 </script>
 
 <template>
   <aside class="cart-drawer" :class="{ open: isCartOpen }" aria-label="点餐车" @click.self="onClose">
-    <div class="cart-panel">
+    <div class="cart-panel" role="dialog" aria-modal="true">
       <!-- Header -->
       <div class="cart-head">
-        <h2>点餐车</h2>
+        <h2>{{ showOrderList ? '我的订单' : '点餐车' }}</h2>
         <div class="cart-head-actions">
-          <button v-if="cart.length" class="clear-button" type="button" @click="clearCart()">清空</button>
-          <button type="button" @click="onClose">关闭</button>
+          <button v-if="showOrderList" class="clear-button" type="button" @click="closeOrderList()">返回购物车</button>
+          <template v-else>
+            <button class="clear-button" type="button" @click="openOrderList()">订单列表</button>
+            <button v-if="cart.length" class="clear-button" type="button" @click="clearCart()">清空</button>
+            <button type="button" @click="onClose">关闭</button>
+          </template>
         </div>
       </div>
 
+      <!-- Order list view -->
+      <template v-if="showOrderList">
+        <div class="cart-body">
+          <p v-if="isLoadingOrders" class="empty-cart">订单加载中...</p>
+          <p v-else-if="!orderHistory.length" class="empty-cart">暂无历史订单</p>
+          <div v-else class="order-list">
+            <article
+              v-for="order in orderHistory"
+              :key="order.orderNo"
+              class="order-card-mini"
+            >
+              <div class="order-mini-head">
+                <strong>{{ order.orderNo }}</strong>
+                <span :class="['order-mini-status', (order.status || '').toLowerCase()]">{{ statusLabel(order.status) }}</span>
+              </div>
+              <div class="order-mini-body">
+                <span>{{ order.orderType === 'dine_in' ? '堂食' : '外带' }}</span>
+                <span v-if="order.tableNumber">桌号 {{ order.tableNumber }}</span>
+                <span v-if="order.pickupNumber">取餐号 {{ order.pickupNumber }}</span>
+                <strong>¥{{ Number(order.totalAmount || 0).toLocaleString('zh-CN') }}</strong>
+              </div>
+              <div v-if="order.items && order.items.length" class="order-mini-items">
+                {{ order.items.map(i => `${i.name} x${i.quantity}`).join('、') }}
+              </div>
+              <router-link class="order-mini-link" :to="`/orders/${order.orderNo}`" @click="onClose">查看详情</router-link>
+            </article>
+          </div>
+        </div>
+      </template>
+
       <!-- Receipt view -->
-      <template v-if="showReceipt && lastOrder">
+      <template v-else-if="showReceipt && lastOrder">
         <div class="receipt glass-panel">
           <p class="receipt-icon">&#10003;</p>
           <h3>下单成功</h3>
@@ -68,7 +119,7 @@ function onClose() {
             </div>
             <div>
               <dt>类型</dt>
-              <dd>{{ lastOrder.type === 'dine_in' ? '堂食' : '外带' }}</dd>
+              <dd>{{ lastOrder.orderType === 'dine_in' ? '堂食' : '外带' }}</dd>
             </div>
             <div v-if="lastOrder.tableNumber">
               <dt>桌号</dt>
@@ -151,7 +202,7 @@ function onClose() {
             v-model="note"
             type="text"
             placeholder="口味要求等（选填）"
-            maxlength="60"
+            :maxlength="NOTE_MAX_LENGTH"
           />
         </div>
 
@@ -550,6 +601,79 @@ function onClose() {
 
 .receipt .primary-button {
   width: 100%;
+}
+
+/* --- order list --- */
+.order-list {
+  display: grid;
+  gap: 12px;
+}
+
+.order-card-mini {
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.order-mini-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.order-mini-head strong {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.order-mini-status {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+}
+
+.order-mini-status.pending { color: var(--accent); border-color: var(--accent); }
+.order-mini-status.preparing { color: #2563eb; border-color: #2563eb; }
+.order-mini-status.completed { color: #16a34a; border-color: #16a34a; }
+.order-mini-status.cancelled { color: #a33; border-color: rgba(200, 60, 60, 0.4); }
+
+.order-mini-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.order-mini-body strong {
+  margin-left: auto;
+  color: var(--ink);
+}
+
+.order-mini-items {
+  font-size: 12px;
+  color: var(--soft);
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-mini-link {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.order-mini-link:hover {
+  color: var(--ink);
 }
 
 /* --- responsive --- */
