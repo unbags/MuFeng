@@ -3,9 +3,13 @@ package com.example.ordering.ai.assistant;
 import com.example.ordering.ai.prompt.PromptTemplateService;
 import com.example.ordering.dto.ChatRequest;
 import com.example.ordering.dto.ChatResponse;
+import com.example.ordering.service.CartService;
 import com.example.ordering.service.ChatService;
+import com.example.ordering.service.MenuService;
+import com.example.ordering.service.OrderService;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.beans.factory.ObjectProvider;
 import reactor.core.publisher.Flux;
 
@@ -95,7 +99,20 @@ class AiAssistantServiceTest {
     private AiAssistantService service(AiAssistantProperties properties, PromptTemplateService promptTemplateService) {
         ObjectProvider<ChatClient> chatClientProvider = mock(ObjectProvider.class);
         when(chatClientProvider.getIfAvailable()).thenReturn(null);
-        return new AiAssistantService(properties, promptTemplateService, mock(ChatService.class), chatClientProvider);
+        ObjectProvider<QuestionAnswerAdvisor> ragAdvisorProvider = mock(ObjectProvider.class);
+        when(ragAdvisorProvider.getIfAvailable()).thenReturn(null);
+        return new AiAssistantService(
+            properties,
+            promptTemplateService,
+            mock(ChatService.class),
+            chatClientProvider,
+            ragAdvisorProvider,
+            mock(MenuService.class),
+            mock(OrderService.class),
+            new IntentAnalyzer(),
+            mock(DishResolutionService.class),
+            mock(CartService.class)
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -106,7 +123,20 @@ class AiAssistantServiceTest {
         when(promptTemplateService.render("customer-system", Collections.emptyMap())).thenReturn("customer prompt");
         ObjectProvider<ChatClient> chatClientProvider = mock(ObjectProvider.class);
         when(chatClientProvider.getIfAvailable()).thenReturn(chatClient);
-        return new AiAssistantService(properties, promptTemplateService, fallback, chatClientProvider);
+        ObjectProvider<QuestionAnswerAdvisor> ragAdvisorProvider = mock(ObjectProvider.class);
+        when(ragAdvisorProvider.getIfAvailable()).thenReturn(null);
+        return new AiAssistantService(
+            properties,
+            promptTemplateService,
+            fallback,
+            chatClientProvider,
+            ragAdvisorProvider,
+            mock(MenuService.class),
+            mock(OrderService.class),
+            new IntentAnalyzer(),
+            mock(DishResolutionService.class),
+            mock(CartService.class)
+        );
     }
 
     private ChatClient blankCallChatClient() {

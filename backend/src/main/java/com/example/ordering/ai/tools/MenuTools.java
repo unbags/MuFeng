@@ -4,6 +4,7 @@ import com.example.ordering.dto.DishResponse;
 import com.example.ordering.dto.MenuResponse;
 import com.example.ordering.service.MenuService;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -13,9 +14,16 @@ import java.util.List;
 public class MenuTools {
 
     private final MenuService menuService;
+    private final ToolAuditSupport auditSupport;
 
     public MenuTools(MenuService menuService) {
+        this(menuService, ToolAuditSupport.disabled());
+    }
+
+    @Autowired
+    public MenuTools(MenuService menuService, ToolAuditSupport auditSupport) {
         this.menuService = menuService;
+        this.auditSupport = auditSupport;
     }
 
     /**
@@ -23,7 +31,8 @@ public class MenuTools {
      */
     @Tool(description = "Query the full available menu with all dishes, categories, and prices. Call this when the user asks about menu, dishes, what's available, or what to eat. 查询当前完整可售菜单。")
     public MenuToolResponse getMenu() {
-        return new MenuToolResponse(currentDishes().stream().map(this::toToolItem).toList());
+        return auditSupport.record("getMenu", "all", () ->
+            new MenuToolResponse(currentDishes().stream().map(this::toToolItem).toList()));
     }
 
     /**
@@ -31,18 +40,20 @@ public class MenuTools {
      */
     @Tool(description = "Search dishes by keyword, category, and/or max budget. Call when user asks about specific dish types, categories, or has price constraints. 按关键词/分类/预算搜索菜品。")
     public DishSearchResponse searchDishes(DishSearchRequest request) {
-        String keyword = normalize(request.keyword());
-        String category = normalize(request.category());
+        return auditSupport.record("searchDishes", summarize(request), () -> {
+            String keyword = normalize(request.keyword());
+            String category = normalize(request.category());
 
-        List<DishToolItem> matches = currentDishes().stream()
-            .filter(dish -> keyword == null || contains(dish.getName(), keyword) || contains(dish.getHighlight(), keyword))
-            .filter(dish -> category == null || category.equalsIgnoreCase(nullToEmpty(dish.getCategory())))
-            .filter(dish -> request.maxPrice() == null || dish.getPrice() == null || dish.getPrice().compareTo(request.maxPrice()) <= 0)
-            .sorted(Comparator.comparing(DishResponse::getPrice, Comparator.nullsLast(Comparator.naturalOrder())))
-            .map(this::toToolItem)
-            .toList();
+            List<DishToolItem> matches = currentDishes().stream()
+                .filter(dish -> keyword == null || contains(dish.getName(), keyword) || contains(dish.getHighlight(), keyword))
+                .filter(dish -> category == null || category.equalsIgnoreCase(nullToEmpty(dish.getCategory())))
+                .filter(dish -> request.maxPrice() == null || dish.getPrice() == null || dish.getPrice().compareTo(request.maxPrice()) <= 0)
+                .sorted(Comparator.comparing(DishResponse::getPrice, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(this::toToolItem)
+                .toList();
 
-        return new DishSearchResponse(matches);
+            return new DishSearchResponse(matches);
+        });
     }
 
     /**
@@ -83,5 +94,14 @@ public class MenuTools {
      */
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private String summarize(DishSearchRequest request) {
+        if (request == null) {
+            return "request=null";
+        }
+        return "keyword=" + request.keyword()
+            + ", category=" + request.category()
+            + ", maxPrice=" + request.maxPrice();
     }
 }

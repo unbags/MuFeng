@@ -19,12 +19,12 @@ frontend/
 │   ├── components/
 │   │   ├── admin/         # 管理端组件（菜品卡片、表单弹窗、图片上传等）
 │   │   ├── cart/          # 购物车组件（面板、结算弹窗、小票弹窗）
-│   │   ├── dashboard/     # 仪表盘组件（指标卡片、图表、订单类型分布）
+│   │   ├── dashboard/     # 仪表盘组件（图表、品类仪表、订单类型分布、最近订单）
 │   │   ├── layout/        # 布局组件（侧边栏、Toast、Loading）
 │   │   ├── menu/          # 菜单组件（菜品卡片、点餐类型切换）
-│   │   └── ui/            # 通用 UI 组件（分页、数量控制、空状态、图片容错）
-│   ├── composables/       # 组合式函数（state、useOrderingStore、useAuth、useCart、useMenu、useAdmin、useOrders、useDashboard、useToast、useKnowledge）
-│   ├── config/            # 常量配置（分页、费用、提示时长、HTTP 错误消息）
+│   │   └── ui/            # 通用 UI 组件（分页、数量控制、指标卡片、空状态、图片容错）
+│   ├── composables/       # 组合式函数（state、useAppStore、useAuth、useCart、useMenu、useAdmin、useOrders、useDashboard、useToast、useKnowledge）
+│   ├── config/            # 常量配置（分页、费用、提示时长、备注长度限制、HTTP 错误消息）
 │   ├── router/            # 路由定义（含 beforeEach 认证守卫）
 │   ├── styles/            # 样式文件（tokens、reset、base、layout、components、customer、admin、dashboard、animations、responsive）
 │   ├── utils/             # 工具函数（format、normalize）
@@ -149,7 +149,7 @@ docker run -d -p 80:80 --name mufeng-frontend mufeng-frontend
 
 ## 架构说明
 
-- **状态管理**：基于 Vue 3 Composition API 的 composables 模式，`useOrderingStore` 为中央编排器，通过 `provide/inject` 跨组件共享
+- **状态管理**：基于 Vue 3 Composition API 的 composables 模式，`useAppStore` 为中央编排器，各 composable 通过直接导入 ES module 共享响应式状态
 - **API 层**：统一封装 fetch 请求，自动注入 JWT Bearer Token，401 时自动跳转登录页
 - **样式系统**：10 个 CSS 文件按职责拆分，设计令牌统一定义在 `tokens.css`（暖色调 Apple 风格）
-- **实时通信**：STOMP over WebSocket 连接 `/ws`，订阅 `/topic/orders/new`、`/topic/orders/status`、`/topic/dashboard`
+- **实时通信**：通过后端 WebSocket 推送订单状态与看板刷新，前端通过 API 轮询感知变更

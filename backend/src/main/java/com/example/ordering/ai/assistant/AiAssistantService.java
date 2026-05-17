@@ -1,11 +1,15 @@
 package com.example.ordering.ai.assistant;
 
 import com.example.ordering.ai.prompt.PromptTemplateService;
+import com.example.ordering.ai.tools.CartContextHolder;
+import com.example.ordering.dto.CartSnapshot;
+import com.example.ordering.dto.ChatAction;
 import com.example.ordering.dto.ChatRequest;
 import com.example.ordering.dto.ChatResponse;
 import com.example.ordering.dto.DishResponse;
 import com.example.ordering.dto.MenuResponse;
 import com.example.ordering.dto.OrderDetailResponse;
+import com.example.ordering.service.CartService;
 import com.example.ordering.service.ChatService;
 import com.example.ordering.service.MenuService;
 import com.example.ordering.service.OrderService;
@@ -18,9 +22,12 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +44,9 @@ public class AiAssistantService {
     private final QuestionAnswerAdvisor ragAdvisor;
     private final MenuService menuService;
     private final OrderService orderService;
+    private final IntentAnalyzer intentAnalyzer;
+    private final DishResolutionService dishResolutionService;
+    private final CartService cartService;
 
     public AiAssistantService(AiAssistantProperties properties,
                                PromptTemplateService promptTemplateService,
@@ -44,7 +54,10 @@ public class AiAssistantService {
                                ObjectProvider<ChatClient> chatClientProvider,
                                ObjectProvider<QuestionAnswerAdvisor> ragAdvisorProvider,
                                MenuService menuService,
-                               OrderService orderService) {
+                               OrderService orderService,
+                               IntentAnalyzer intentAnalyzer,
+                               DishResolutionService dishResolutionService,
+                               CartService cartService) {
         this.properties = properties;
         this.promptTemplateService = promptTemplateService;
         this.fallback = fallback;
@@ -52,6 +65,9 @@ public class AiAssistantService {
         this.ragAdvisor = ragAdvisorProvider.getIfAvailable();
         this.menuService = menuService;
         this.orderService = orderService;
+        this.intentAnalyzer = intentAnalyzer;
+        this.dishResolutionService = dishResolutionService;
+        this.cartService = cartService;
     }
 
     public AssistantMode mode() {
@@ -87,6 +103,10 @@ public class AiAssistantService {
      * 完全绕过 DeepSeek 函数调用机制，避免兼容性问题。
      */
     public ChatResponse reply(ChatRequest request) {
+        ChatResponse orderingResponse = tryHandleOrdering(request);
+        if (orderingResponse != null) {
+            return orderingResponse;
+        }
         if (chatClient == null || mode() == AssistantMode.RULE_BASED) {
             return fallback.reply(request);
         }
@@ -99,6 +119,7 @@ public class AiAssistantService {
         String enrichedMessage = enrichWithData(userMessage, request);
 
         try {
+            CartContextHolder.setCartId(cartId(request));
             log.info("AI request: convId={} route={} msgLen={}", conversationId, currentRoute, enrichedMessage.length());
             String answer = chatClient.prompt()
                 .user(enrichedMessage)
@@ -123,7 +144,106 @@ public class AiAssistantService {
             log.error("AI failed, falling back; convId={} route={}",
                 conversationId, currentRoute, e);
             return fallback.reply(request);
+        } finally {
+            CartContextHolder.clear();
         }
+    }
+
+    private ChatResponse tryHandleOrdering(ChatRequest request) {
+        String userMessage = trimToNull(request == null ? null : request.getMessage());
+        if (userMessage == null) {
+            return null;
+        }
+        IntentAnalysisResult analysis = intentAnalyzer.analyze(userMessage);
+        AssistantIntent intent = analysis.getIntent();
+        if (intent == AssistantIntent.TRANSACTION && analysis.getItems().isEmpty()) {
+            String message = "我不能替你提交订单或付款。你可以告诉我想点什么，我可以先帮你加入购物车，之后请你在购物车确认商品、数量和金额后自行提交订单并完成支付。";
+            return structured(message, intent, List.of(), cartService.getCart(cartId(request)), message);
+        }
+        if (intent == AssistantIntent.AMBIGUOUS_ORDER && !analysis.getItems().isEmpty()) {
+            String dishName = analysis.getItems().get(0).getRawName();
+            String message = dishName + "可以的。请问需要几份？";
+            return structured(message, intent, List.of(), cartService.getCart(cartId(request)), message);
+        }
+        if (intent == AssistantIntent.RECOMMENDATION) {
+            String message = recommendationMessage();
+            return structured(message, intent, List.of(), null, null);
+        }
+        if (intent != AssistantIntent.EXPLICIT_ORDER) {
+            return null;
+        }
+
+        if (analysis.getItems().isEmpty() || analysis.getItems().stream().anyMatch(item -> item.getQuantity() == null)) {
+            return structured("请告诉我想点的商品和数量。", AssistantIntent.AMBIGUOUS_ORDER,
+                List.of(), cartService.getCart(cartId(request)), "请告诉我想点的商品和数量。");
+        }
+        List<ResolvedOrderItem> resolvedItems = new ArrayList<>();
+        for (IntentAnalysisResult.Item item : analysis.getItems()) {
+            DishResolutionResult resolution = dishResolutionService.resolve(item.getRawName());
+            if (!resolution.hasUniqueDish()) {
+                String candidates = resolution.getCandidates().stream()
+                    .map(DishResponse::getName)
+                    .limit(4)
+                    .collect(Collectors.joining("、"));
+                String message = candidates.trim().isEmpty()
+                    ? "我暂时没有找到“" + item.getRawName() + "”，请换个名称试试。"
+                    : "我找到了这些相近商品：" + candidates + "。你想要哪一个？";
+                return structured(message, AssistantIntent.AMBIGUOUS_ORDER,
+                    List.of(), cartService.getCart(cartId(request)), message);
+            }
+            resolvedItems.add(new ResolvedOrderItem(item, resolution.getDish()));
+        }
+
+        CartSnapshot snapshot = null;
+        List<ChatAction> actions = new ArrayList<>();
+        List<String> summaries = new ArrayList<>();
+        for (ResolvedOrderItem resolvedItem : resolvedItems) {
+            IntentAnalysisResult.Item item = resolvedItem.item();
+            DishResponse dish = resolvedItem.dish();
+            String operationId = "ai-" + UUID.randomUUID();
+            snapshot = cartService.addToCart(cartId(request), dish.getId(), item.getQuantity(), item.getRemark(), operationId);
+            actions.add(new ChatAction("ADD_TO_CART", dish.getId(), item.getQuantity(), operationId));
+            summaries.add(dish.getName() + " x " + item.getQuantity());
+        }
+        String suffix = analysis.getSafetyFlags().hasTransactionRisk()
+            ? " 我不能替你提交订单或付款，请你在购物车确认商品、数量和金额后自行提交订单并完成支付。"
+            : " 请在购物车确认商品、数量和金额后再提交订单。";
+        String message = "已为你加入购物车：" + String.join("、", summaries) + "。" + suffix;
+        return structured(message, intent, actions, snapshot, null);
+    }
+
+    private record ResolvedOrderItem(IntentAnalysisResult.Item item, DishResponse dish) {
+    }
+
+    private String recommendationMessage() {
+        try {
+            MenuResponse menu = menuService.getMenu();
+            List<DishResponse> dishes = menu.getDishes() == null ? List.of() : menu.getDishes();
+            String recommendations = dishes.stream()
+                .limit(3)
+                .map(dish -> dish.getName() + (trimToNull(dish.getHighlight()) == null ? "" : "（" + dish.getHighlight() + "）"))
+                .collect(Collectors.joining("、"));
+            if (recommendations.trim().isEmpty()) {
+                return "当前菜单正在维护中，您可以稍后再试或咨询店员。";
+            }
+            return "今日推荐：" + recommendations + "。如果想点其中某一道，可以告诉我商品名和数量。";
+        } catch (Exception e) {
+            log.warn("Failed to build recommendation response", e);
+            return "我暂时无法读取今日菜单，您可以稍后再试或直接浏览菜单页面。";
+        }
+    }
+
+    private ChatResponse structured(String message, AssistantIntent intent, List<ChatAction> actions,
+                                    CartSnapshot cartSnapshot, String clarification) {
+        return new ChatResponse(
+            message,
+            "AI-CART",
+            LocalDateTime.now(),
+            intent == null ? null : intent.name(),
+            actions,
+            cartSnapshot,
+            clarification
+        );
     }
 
     /**
@@ -198,6 +318,10 @@ public class AiAssistantService {
      * 流式回复（SSE），AI 不可用时回退到规则回复。
      */
     public Flux<String> stream(ChatRequest request) {
+        ChatResponse orderingResponse = tryHandleOrdering(request);
+        if (orderingResponse != null) {
+            return streamText(orderingResponse.getMessage());
+        }
         if (chatClient == null || mode() == AssistantMode.RULE_BASED) {
             ChatResponse reply = fallback.reply(request);
             return Flux.just(reply.getMessage());
@@ -213,6 +337,7 @@ public class AiAssistantService {
         log.info("AI stream started; convId={} route={}", conversationId, currentRoute);
 
         try {
+            CartContextHolder.setCartId(cartId(request));
             return chatClient.prompt()
                 .user(enrichedMessage)
                 .system(systemPrompt)
@@ -234,12 +359,23 @@ public class AiAssistantService {
                     log.error("AI stream failed, falling back; convId={}", conversationId, e);
                     ChatResponse reply = fallback.reply(request);
                     return Flux.just(reply.getMessage());
-                });
+                })
+                .doFinally(signalType -> CartContextHolder.clear());
         } catch (Exception e) {
+            CartContextHolder.clear();
             log.error("AI stream setup failed, falling back; convId={}", conversationId, e);
             ChatResponse reply = fallback.reply(request);
             return Flux.just(reply.getMessage());
         }
+    }
+
+    private Flux<String> streamText(String message) {
+        String value = message == null ? "" : message;
+        List<String> chunks = new ArrayList<>();
+        for (int i = 0; i < value.length(); i += 6) {
+            chunks.add(value.substring(i, Math.min(i + 6, value.length())));
+        }
+        return Flux.fromIterable(chunks).delayElements(Duration.ofMillis(35));
     }
 
     private String buildUserMessage(ChatRequest request) {
@@ -263,6 +399,14 @@ public class AiAssistantService {
         if (request == null) return DEFAULT_CONVERSATION_ID;
         String id = trimToNull(request.getConversationId());
         return id != null ? id : DEFAULT_CONVERSATION_ID;
+    }
+
+    private String cartId(ChatRequest request) {
+        if (request == null) return "anonymous-ai";
+        String id = trimToNull(request.getCartId());
+        if (id != null) return id;
+        id = trimToNull(request.getConversationId());
+        return id != null ? "conversation-" + id : "anonymous-ai";
     }
 
     private String sourceTag() {

@@ -1,6 +1,6 @@
 # 沐枫餐饮在线点餐系统
 
-沐枫餐饮在线点餐系统是一套面向餐饮门店的线上点餐与运营管理平台，包含顾客点餐端、店员管理端和 Spring Boot 后端服务。系统支持菜单浏览、在线下单、订单状态跟踪、评价管理、后台商品与分类管理、订单处理、实时推送、菜单缓存，以及可配置的 AI 点餐助手和知识库检索。
+沐枫餐饮在线点餐系统是一套面向餐饮门店的线上点餐与运营管理平台，包含顾客点餐端、店员管理端和 Spring Boot 后端服务。系统支持菜单浏览、购物车同步、在线下单、订单状态跟踪、评价管理、后台商品与分类管理、订单处理、实时推送、菜单缓存，以及可配置的 AI 点餐助手和知识库检索。
 
 ## 项目结构
 
@@ -8,7 +8,7 @@
 MuFeng/
 ├── backend/          # Spring Boot 后端服务，REST API、认证、缓存、WebSocket、AI
 ├── frontend/         # Vue 3 店员管理端，登录、点餐工作台、数据看板、商品管理、知识库
-├── metaFront/        # Vue 3 顾客端，菜单浏览、在线下单、订单跟踪、AI 客服
+├── metaFront/        # Vue 3 顾客端，菜单浏览、购物车、在线下单、订单跟踪、AI 客服
 ├── LICENSE
 └── README.md
 ```
@@ -45,9 +45,9 @@ MuFeng/
 ## 后端分层架构
 
 ```text
-backend/src/main/java/com/example/ordering/
+backend/src/main/java/com/unbags/ordering/
 ├── controller/       # REST 接口层，统一返回 { code, message, data } 格式
-├── service/          # 业务服务层，菜单、订单、用户、评价、通知、支付、文档解析
+├── service/          # 业务服务层，菜单、购物车、订单、用户、评价、通知、支付、文档解析
 ├── mapper/           # MyBatis-Plus 数据访问层，含自定义库存扣减与统计查询
 ├── domain/           # 数据库实体（Category, Dish, CustomerOrder, OrderItem, User, Review, OrderStatusLog）
 ├── dto/              # 请求/响应 DTO，含参数校验与中文提示
@@ -60,6 +60,7 @@ backend/src/main/java/com/example/ordering/
 ## 后端核心能力
 
 - **菜单查询与缓存**：顾客端菜单优先读取 Redis，后台变更后主动失效缓存，TTL 可配置
+- **购物车同步**：顾客端和 AI 助手共享后端购物车快照，支持添加、修改、删除、清空和提交后清理
 - **在线下单**：支持堂食（填桌号）和外带（到店自取），生成唯一订单号、实时计价、原子扣减库存
 - **订单状态流转**：PENDING → PREPARING → COMPLETED / CANCELLED，由状态机校验防止非法跳转
 - **后台运营管理**：菜品 CRUD、分类管理、图片上传、订单查询与状态变更、数据看板、菜品销量排行
@@ -67,7 +68,7 @@ backend/src/main/java/com/example/ordering/
 - **评价管理**：顾客提交菜品评分，支持按菜品和订单查询评价
 - **实时推送**：新订单、状态变更、看板刷新通过 STOMP WebSocket 推送到管理端
 - **高并发保护**：Semaphore 限流订单写入 (默认 300 并发)，Snowflake 算法生成全局唯一 ID
-- **AI 点餐助手**：可配置四种模式（规则兜底 / LLM 对话 / RAG 检索 / 全能力），支持 SSE 流式回复
+- **AI 点餐助手**：支持菜单推荐、商品识别、多商品点餐、购物车加购、规则兜底、RAG 检索和 SSE 纯文本流式回复
 - **知识库管理**：后台可上传 PDF/DOCX/MD/TXT 等文件，自动解析切片写入 Milvus 向量库
 - **监控与健康检查**：暴露 `/actuator/health` 和 `/actuator/prometheus`
 
@@ -148,6 +149,11 @@ npm run dev
 | `GET` | `/api/menu` | 查询完整菜单（分类 + 菜品） |
 | `POST` | `/api/orders` | 创建订单（堂食/外带） |
 | `GET` | `/api/orders/{orderNo}` | 查询订单详情与状态 |
+| `GET` | `/api/cart` | 查询当前购物车快照 |
+| `POST` | `/api/cart/items` | 添加商品到购物车 |
+| `PUT` | `/api/cart/items/{dishId}` | 修改购物车商品数量 |
+| `DELETE` | `/api/cart/items/{dishId}` | 移除购物车商品 |
+| `DELETE` | `/api/cart` | 清空购物车 |
 | `POST` | `/api/chat/query` | AI 助手同步问答 |
 | `POST` | `/api/chat/stream` | AI 助手 SSE 流式问答 |
 | `POST` | `/api/reviews` | 提交菜品评价 |
@@ -211,10 +217,19 @@ AI 模块由四部分组成：
 
 | 模块 | 路径 | 说明 |
 |------|------|------|
-| `assistant` | `ai/assistant/` | 模式判断、用户消息构造、模型调用与规则兜底降级 |
+| `assistant` | `ai/assistant/` | 意图识别、菜品解析、模式判断、用户消息构造、模型调用与规则兜底降级 |
 | `prompt` | `ai/prompt/` | 加载 `.st` 模板，渲染中文提示词 |
 | `rag` | `ai/rag/` | 菜单知识文档构建、Milvus 写入、启动时刷新索引 |
-| `tools` | `ai/tools/` | 菜单查询、菜品搜索、订单状态、推荐、业务规则工具 |
+| `tools` | `ai/tools/` | 菜单查询、菜品搜索、购物车操作、订单状态、推荐、业务规则工具 |
+
+当前 AI 点餐助手重点能力：
+
+- **今日推荐**：用户询问“今日招牌菜推荐”时只返回推荐文本，不自动推送或加入商品
+- **单品点餐**：支持“我想点一份海盐拿铁”“单点一份香草牛肉意面”等表达
+- **追加点餐**：支持“再来一份芒果酸奶碗”“再加两份柠檬茶”等“再来/再点/再要/再加”表达
+- **多商品点餐**：支持“一份香草牛肉意面、两份芒果酸奶碗”等一次添加多个商品
+- **购物车一致性**：顾客端通过稳定 `cartId` 与后端购物车同步，清空购物车后再次使用“再来”不会恢复已清除商品
+- **流式输出**：`/api/chat/stream` 面向前端只展示助手文本内容，结构化购物车状态由前端在流结束后刷新
 
 配置项：
 
@@ -222,9 +237,11 @@ AI 模块由四部分组成：
 |------|--------|------|
 | `app.ai.enabled` | `true` | 启用 AI 对话 |
 | `app.ai.rag.enabled` | `true` | 启用 RAG 知识库检索 |
-| `app.ai.tools.enabled` | `false` | 启用 Function Calling 工具 |
+| `app.ai.tools.enabled` | `true` | 启用 Function Calling 工具 |
 | `app.ai.rag.top-k` | `5` | 向量检索返回文档数 |
 | `app.ai.rag.similarity-threshold` | `0.65` | 相似度阈值 |
+
+AI 助手支持意图识别、菜品解析、模式判断、用户消息构造、模型调用与规则兜底降级等能力。
 
 ## 页面路由
 

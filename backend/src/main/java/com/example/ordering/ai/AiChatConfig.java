@@ -2,6 +2,7 @@ package com.example.ordering.ai;
 
 import com.example.ordering.ai.assistant.AiAssistantProperties;
 import com.example.ordering.ai.tools.BusinessRuleTools;
+import com.example.ordering.ai.tools.CartTools;
 import com.example.ordering.ai.tools.MenuTools;
 import com.example.ordering.ai.tools.OrderTools;
 import com.example.ordering.ai.tools.RecommendTools;
@@ -54,6 +55,7 @@ public class AiChatConfig {
                                   AiAssistantProperties properties,
                                   ObjectProvider<VectorStore> vectorStoreProvider,
                                   MenuTools menuTools,
+                                  CartTools cartTools,
                                   OrderTools orderTools,
                                   BusinessRuleTools businessRuleTools,
                                   RecommendTools recommendTools) {
@@ -74,8 +76,8 @@ public class AiChatConfig {
         }
 
         if (properties.getTools().isEnabled()) {
-            builder.defaultTools(menuTools, orderTools, businessRuleTools, recommendTools);
-            log.info("AI tools registered: getMenu, searchDishes, getOrderStatus, getBusinessRules, recommendDishes");
+            builder.defaultTools(menuTools, cartTools, orderTools, businessRuleTools, recommendTools);
+            log.info("AI tools registered: getMenu, searchDishes, addToCart, updateCartItem, removeCartItem, getCart, getOrderStatus, getBusinessRules, recommendDishes");
         }
 
         return builder.build();

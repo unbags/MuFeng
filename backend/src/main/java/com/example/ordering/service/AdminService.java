@@ -2,6 +2,7 @@ package com.example.ordering.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.ordering.ai.rag.KnowledgeRefreshService;
 import com.example.ordering.domain.Category;
 import com.example.ordering.domain.CustomerOrder;
 import com.example.ordering.domain.Dish;
@@ -23,8 +24,12 @@ import com.example.ordering.mapper.DishMapper;
 import com.example.ordering.mapper.OrderItemMapper;
 import com.example.ordering.mapper.OrderStatusLogMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -51,12 +56,15 @@ import java.util.stream.Collectors;
 @Service
 public class AdminService {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminService.class);
+
     private final DishMapper dishMapper;
     private final CategoryMapper categoryMapper;
     private final CustomerOrderMapper customerOrderMapper;
     private final OrderItemMapper orderItemMapper;
     private final OrderStatusLogMapper orderStatusLogMapper;
     private final MenuService menuService;
+    private final KnowledgeRefreshService knowledgeRefreshService;
     private final SnowflakeIdGenerator idGenerator;
     private final NotificationService notificationService;
     private final Path imageRoot;
@@ -68,6 +76,7 @@ public class AdminService {
         OrderItemMapper orderItemMapper,
         OrderStatusLogMapper orderStatusLogMapper,
         MenuService menuService,
+        KnowledgeRefreshService knowledgeRefreshService,
         SnowflakeIdGenerator idGenerator,
         NotificationService notificationService,
         @Value("${app.storage.image-dir:src/main/resources/images}") String imageDir
@@ -78,6 +87,7 @@ public class AdminService {
         this.orderItemMapper = orderItemMapper;
         this.orderStatusLogMapper = orderStatusLogMapper;
         this.menuService = menuService;
+        this.knowledgeRefreshService = knowledgeRefreshService;
         this.idGenerator = idGenerator;
         this.notificationService = notificationService;
         this.imageRoot = Paths.get(imageDir).toAbsolutePath().normalize();
@@ -107,7 +117,7 @@ public class AdminService {
         category.setLabel(label);
         category.setSortOrder(request.getSortOrder());
         categoryMapper.insert(category);
-        menuService.invalidateMenuCache();
+        afterMenuMutation();
         return toCategoryResponse(categoryMapper.selectById(id));
     }
 
@@ -120,7 +130,7 @@ public class AdminService {
         category.setLabel(request.getLabel().trim());
         category.setSortOrder(request.getSortOrder());
         categoryMapper.updateById(category);
-        menuService.invalidateMenuCache();
+        afterMenuMutation();
         return toCategoryResponse(categoryMapper.selectById(category.getId()));
     }
 
@@ -145,7 +155,7 @@ public class AdminService {
 
         reassignDeletedDishesBeforeCategoryDelete(category.getId());
         categoryMapper.deleteById(category.getId());
-        menuService.invalidateMenuCache();
+        afterMenuMutation();
     }
 
     /**
@@ -462,7 +472,7 @@ public class AdminService {
         applyDishRequest(dish, request);
         dish.setDeleted(0);
         dishMapper.insert(dish);
-        menuService.invalidateMenuCache();
+        afterMenuMutation();
         return toAdminDishResponse(dishMapper.selectById(dish.getId()), buildCategoryLabelMap());
     }
 
@@ -475,7 +485,7 @@ public class AdminService {
         Dish dish = getDishOrThrow(dishId);
         applyDishRequest(dish, request);
         dishMapper.updateById(dish);
-        menuService.invalidateMenuCache();
+        afterMenuMutation();
         return toAdminDishResponse(dishMapper.selectById(dishId), buildCategoryLabelMap());
     }
 
@@ -490,7 +500,7 @@ public class AdminService {
         Dish dish = getDishOrThrow(dishId);
         dish.setAvailable(available);
         dishMapper.updateById(dish);
-        menuService.invalidateMenuCache();
+        afterMenuMutation();
         return toAdminDishResponse(dishMapper.selectById(dishId), buildCategoryLabelMap());
     }
 
@@ -503,7 +513,7 @@ public class AdminService {
         dish.setAvailable(Boolean.FALSE);
         dishMapper.updateById(dish);
         dishMapper.deleteById(dishId);
-        menuService.invalidateMenuCache();
+        afterMenuMutation();
     }
 
     private void applyDishRequest(Dish dish, AdminDishRequest request) {
@@ -522,6 +532,31 @@ public class AdminService {
         if (dish.getDeleted() == null) {
             dish.setDeleted(0);
         }
+    }
+
+    private void afterMenuMutation() {
+        Runnable refreshTask = () -> {
+            menuService.invalidateMenuCache();
+            KnowledgeRefreshService.RefreshResult result = knowledgeRefreshService.refreshAllKnowledge();
+            if (result.refreshed()) {
+                log.info("Knowledge base refreshed after menu change: {} documents", result.documentCount());
+            } else if (result.failed()) {
+                log.warn("Knowledge base refresh failed after menu change: {}", result.message());
+            } else {
+                log.debug("Knowledge base refresh skipped after menu change: {}", result.message());
+            }
+        };
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    refreshTask.run();
+                }
+            });
+            return;
+        }
+        refreshTask.run();
     }
 
     private Dish getDishOrThrow(Long dishId) {

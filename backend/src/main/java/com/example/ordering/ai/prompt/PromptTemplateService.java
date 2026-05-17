@@ -65,7 +65,7 @@ public class PromptTemplateService {
      * 清理模板目录末尾的斜杠，并为空配置提供默认目录。
      */
     private String trimTrailingSlash(String value) {
-        if (value == null || value.isBlank()) {
+        if (value == null || value.trim().isEmpty()) {
             return "classpath:/prompts";
         }
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;

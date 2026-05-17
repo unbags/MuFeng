@@ -3,15 +3,23 @@ package com.example.ordering.ai.tools;
 import com.example.ordering.dto.OrderDetailResponse;
 import com.example.ordering.service.OrderService;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class OrderTools {
 
     private final OrderService orderService;
+    private final ToolAuditSupport auditSupport;
 
     public OrderTools(OrderService orderService) {
+        this(orderService, ToolAuditSupport.disabled());
+    }
+
+    @Autowired
+    public OrderTools(OrderService orderService, ToolAuditSupport auditSupport) {
         this.orderService = orderService;
+        this.auditSupport = auditSupport;
     }
 
     /**
@@ -19,9 +27,11 @@ public class OrderTools {
      */
     @Tool(description = "Look up the real-time status of an order by its order number. Call when the user provides an order number or asks about order progress. 根据订单号查询订单实时状态。")
     public OrderStatusToolResponse getOrderStatus(OrderStatusToolRequest request) {
-        String orderNo = request.orderNo() == null ? "" : request.orderNo().trim();
-        OrderDetailResponse order = orderService.getOrder(orderNo);
-        return new OrderStatusToolResponse(order.getOrderNo(), order.getStatus(), statusHint(order.getStatus()));
+        String orderNo = request == null || request.orderNo() == null ? "" : request.orderNo().trim();
+        return auditSupport.record("getOrderStatus", "orderNo=" + orderNo, () -> {
+            OrderDetailResponse order = orderService.getOrder(orderNo);
+            return new OrderStatusToolResponse(order.getOrderNo(), order.getStatus(), statusHint(order.getStatus()));
+        });
     }
 
     /**

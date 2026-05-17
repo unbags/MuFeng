@@ -13,6 +13,9 @@ public class ChatRequest {
     @Size(max = 64, message = "会话ID不能超过64个字符")
     private String conversationId;
 
+    @Size(max = 96, message = "购物车ID不能超过96个字符")
+    private String cartId;
+
     public ChatRequest() {
     }
 
@@ -43,5 +46,13 @@ public class ChatRequest {
 
     public void setConversationId(String conversationId) {
         this.conversationId = conversationId;
+    }
+
+    public String getCartId() {
+        return cartId;
+    }
+
+    public void setCartId(String cartId) {
+        this.cartId = cartId;
     }
 }

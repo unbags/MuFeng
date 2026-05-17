@@ -2,11 +2,13 @@ package com.example.ordering.controller;
 
 import com.example.ordering.ai.rag.KnowledgeDocument;
 import com.example.ordering.ai.rag.KnowledgeIngestionService;
+import com.example.ordering.ai.rag.KnowledgeRefreshService;
 import com.example.ordering.dto.ApiResponse;
 import com.example.ordering.dto.KnowledgeUploadResult;
 import com.example.ordering.service.DocumentParsingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,11 +22,20 @@ public class KnowledgeController {
 
     private final DocumentParsingService parsingService;
     private final KnowledgeIngestionService ingestionService;
+    private final KnowledgeRefreshService refreshService;
 
     public KnowledgeController(DocumentParsingService parsingService,
                                KnowledgeIngestionService ingestionService) {
+        this(parsingService, ingestionService, null);
+    }
+
+    @Autowired
+    public KnowledgeController(DocumentParsingService parsingService,
+                               KnowledgeIngestionService ingestionService,
+                               KnowledgeRefreshService refreshService) {
         this.parsingService = parsingService;
         this.ingestionService = ingestionService;
+        this.refreshService = refreshService;
     }
 
     @PostMapping("/upload")
@@ -60,9 +71,18 @@ public class KnowledgeController {
         return ApiResponse.success("上传处理完成", results);
     }
 
+    @PostMapping("/rebuild")
+    public ApiResponse<KnowledgeRefreshService.RefreshResult> rebuild() {
+        if (refreshService == null) {
+            throw new IllegalStateException("知识库刷新服务不可用");
+        }
+        KnowledgeRefreshService.RefreshResult result = refreshService.refreshAllKnowledge();
+        return ApiResponse.success(result.message(), result);
+    }
+
     private String originalFilename(MultipartFile file) {
         String filename = file == null ? null : file.getOriginalFilename();
-        return filename == null || filename.isBlank() ? "unknown" : filename;
+        return filename == null || filename.trim().isEmpty() ? "unknown" : filename;
     }
 
     private String fileType(MultipartFile file) {

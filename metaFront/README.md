@@ -15,7 +15,7 @@
 ```
 metaFront/
 ├── src/
-│   ├── api/              # API 请求模块（menu、orders、chat）
+│   ├── api/              # API 请求模块（menu、orders、cart、chat）
 │   ├── components/
 │   │   ├── collection/   # 菜单浏览组件（CategoryTabs、SearchBox、ProductGrid、ProductCard）
 │   │   ├── detail/       # 菜品详情组件（ProductInfo）
@@ -25,6 +25,7 @@ metaFront/
 │   ├── data/             # 静态兜底数据
 │   ├── router/           # 路由定义
 │   ├── styles/           # 设计令牌（tokens.css）
+│   ├── utils/            # 工具函数（cartSession）
 │   ├── views/            # 页面视图（CollectionView、ProductDetailView、OrderStatusView、NotFoundView）
 │   ├── App.vue           # 根组件
 │   └── main.js           # 应用入口
