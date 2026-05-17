@@ -23,8 +23,7 @@ function scrollToBottom() {
   nextTick(() => {
     const el = messagesEl.value
     if (!el) return
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
-    if (nearBottom) el.scrollTop = el.scrollHeight
+    el.scrollTop = el.scrollHeight
   })
 }
 
@@ -151,6 +150,11 @@ watch(scrollTrigger, () => scrollToBottom())
   overflow-y: auto;
   padding: 4px 2px 12px;
   scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.support-messages::-webkit-scrollbar {
+  display: none;
 }
 
 .support-message {

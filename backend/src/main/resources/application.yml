@@ -85,7 +85,7 @@ app:
       top-k: 5
       similarity-threshold: 0.65
     tools:
-      enabled: false
+      enabled: true
       audit-enabled: true
     prompt:
       version: v1

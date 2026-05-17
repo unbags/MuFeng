@@ -12,4 +12,4 @@ logging:
   level:
     org.springframework.ai.openai: DEBUG
     org.springframework.ai.chat.client: DEBUG
-    com.example.ordering.ai: DEBUG
+    com.unbags.ordering.ai: DEBUG

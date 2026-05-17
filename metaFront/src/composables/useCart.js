@@ -1,4 +1,11 @@
 import { computed, ref, watch } from 'vue'
+import {
+  addCartItem,
+  clearBackendCart,
+  fetchCart,
+  removeCartItem,
+  updateCartItem,
+} from '../api/cart.js'
 import { createOrder, fetchOrder } from '../api/orders.js'
 
 const CART_STORAGE_KEY = 'mufeng_customer_cart'
@@ -18,6 +25,7 @@ const showReceipt = ref(false)
 const showOrderList = ref(false)
 const orderHistory = ref([])
 const isLoadingOrders = ref(false)
+let backendSyncQueue = Promise.resolve()
 
 // --- localStorage ---
 function loadCart() {
@@ -69,22 +77,114 @@ function addToCart(dish) {
     isCartOpen.value = true
   }
   saveCart()
+  syncCartToBackend().catch((error) => {
+    console.warn('[metaFront] 同步购物车失败:', error.message)
+  })
+}
+
+function applyCartSnapshot(snapshot) {
+  if (!snapshot || !Array.isArray(snapshot.items)) return
+  cart.value = snapshot.items.map((item) => ({
+    id: item.dishId,
+    title: item.dishName,
+    name: item.dishName,
+    flavor: item.description || item.highlight || item.category || '店内精选',
+    category: item.category,
+    price: item.price,
+    image: item.imageUrl,
+    imageUrl: item.imageUrl,
+    quantity: item.quantity,
+    remark: item.remark,
+    desc: item.description || '',
+    description: item.description || '',
+    highlight: item.highlight || '',
+  }))
+  if (cart.value.length) {
+    isCartOpen.value = true
+  }
+  saveCart()
 }
 
 function removeFromCart(dishId) {
   cart.value = cart.value.filter((item) => item.id !== dishId)
   saveCart()
+  enqueueBackendSync(() => removeCartItem(dishId, createOperationId('manual-remove')))
+    .then(applyCartSnapshot)
+    .catch((error) => {
+      console.warn('[metaFront] 移除后端购物车商品失败:', error.message)
+    })
 }
 
 function decreaseQuantity(dishId) {
   const target = cart.value.find((item) => item.id === dishId)
   if (!target) return
+  let nextQuantity = 0
   if (target.quantity === 1) {
     cart.value = cart.value.filter((item) => item.id !== dishId)
   } else {
     target.quantity -= 1
+    nextQuantity = target.quantity
   }
   saveCart()
+
+  enqueueBackendSync(() => (
+    nextQuantity > 0
+      ? updateCartItem(dishId, {
+        quantity: nextQuantity,
+        operationId: createOperationId('manual-update'),
+      })
+      : removeCartItem(dishId, createOperationId('manual-remove'))
+  ))
+    .then(applyCartSnapshot)
+    .catch((error) => {
+      console.warn('[metaFront] 同步购物车数量失败:', error.message)
+    })
+}
+
+async function syncCartToBackend() {
+  return enqueueBackendSync(syncCartToBackendNow)
+}
+
+async function syncCartToBackendNow() {
+  const localItems = cart.value
+    .filter((item) => item.id != null && Number(item.quantity) > 0)
+    .map((item) => ({
+      dishId: item.id,
+      quantity: Number(item.quantity),
+    }))
+
+  if (!localItems.length) return null
+
+  let snapshot = await fetchCart()
+  const backendIds = new Set((snapshot?.items || []).map((item) => item.dishId))
+
+  for (const item of localItems) {
+    if (!backendIds.has(item.dishId)) {
+      snapshot = await addCartItem({
+        dishId: item.dishId,
+        quantity: 1,
+        operationId: createOperationId('manual-add'),
+      })
+      backendIds.add(item.dishId)
+    }
+
+    snapshot = await updateCartItem(item.dishId, {
+      quantity: item.quantity,
+      operationId: createOperationId('manual-sync'),
+    })
+  }
+
+  applyCartSnapshot(snapshot)
+  return snapshot
+}
+
+function enqueueBackendSync(action) {
+  backendSyncQueue = backendSyncQueue.catch(() => null).then(action)
+  return backendSyncQueue
+}
+
+function createOperationId(prefix) {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 function openCart() {
@@ -138,6 +238,7 @@ async function submitOrder() {
     isCartOpen.value = false
 
     clearCartSilent()
+    await enqueueBackendSync(clearBackendCart).catch(() => {})
     return response
   } finally {
     isSubmitting.value = false
@@ -150,8 +251,9 @@ function clearCartSilent() {
   try { localStorage.removeItem(CART_STORAGE_KEY) } catch { /* ignore */ }
 }
 
-function clearCart() {
+async function clearCart() {
   clearCartSilent()
+  await enqueueBackendSync(clearBackendCart).catch(() => {})
   isCartOpen.value = false
   showReceipt.value = false
 }
@@ -252,6 +354,8 @@ export function useCart() {
     orderHistory,
     isLoadingOrders,
     addToCart,
+    applyCartSnapshot,
+    syncCartToBackend,
     removeFromCart,
     decreaseQuantity,
     openCart,

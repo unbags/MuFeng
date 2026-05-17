@@ -1,5 +1,8 @@
 import { ref } from 'vue'
 import { queryChat, streamChat } from '../api/chat.js'
+import { fetchCart } from '../api/cart.js'
+import { useCart } from './useCart.js'
+import { getCartId } from '../utils/cartSession.js'
 
 let sessionId = null
 function getSessionId() {
@@ -31,6 +34,8 @@ const quickQuestions = ['今日招牌菜推荐', '查询我的订单']
 let requestId = 0
 
 export function useChat() {
+  const { applyCartSnapshot, syncCartToBackend } = useCart()
+
   async function askSupport(question) {
     const text = question || supportInput.value.trim()
     if (!text || isSending.value) return
@@ -48,11 +53,16 @@ export function useChat() {
     isSending.value = true
     isStreaming.value = true
 
+    await syncCartToBackend().catch((error) => {
+      console.warn('[metaFront] AI 发送前同步购物车失败:', error.message)
+    })
+
     const orderMatch = text.match(/\bORD\d{10,}\b/i)
     const payload = {
       message: text,
       orderNo: orderMatch ? orderMatch[0].toUpperCase() : undefined,
       conversationId: getSessionId(),
+      cartId: getCartId(),
     }
 
     const assistantIndex = supportMessages.value.push({
@@ -73,6 +83,7 @@ export function useChat() {
       isSending.value = false
       isStreaming.value = false
       streamAbort.value = null
+      refreshCartSnapshot()
     }
 
     const onError = async (_error) => {
@@ -92,6 +103,9 @@ export function useChat() {
           source: response.source || null,
           isStreaming: false,
         }
+        if (response.cartSnapshot) {
+          applyCartSnapshot(response.cartSnapshot)
+        }
       } catch {
         if (currentId !== requestId) return
         supportMessages.value[assistantIndex] = {
@@ -109,7 +123,25 @@ export function useChat() {
       }
     }
 
-    streamAbort.value = streamChat(payload, onChunk, onDone, onError)
+    const onAction = (event) => {
+      if (event?.cartSnapshot) {
+        applyCartSnapshot(event.cartSnapshot)
+      }
+      if (event?.source && supportMessages.value[assistantIndex]) {
+        supportMessages.value[assistantIndex].source = event.source
+      }
+    }
+
+    streamAbort.value = streamChat(payload, onChunk, onDone, onError, onAction)
+  }
+
+  async function refreshCartSnapshot() {
+    try {
+      const snapshot = await fetchCart()
+      applyCartSnapshot(snapshot)
+    } catch {
+      // Chat text should remain usable even if cart refresh fails.
+    }
   }
 
   function toggleSupport() {

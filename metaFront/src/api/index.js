@@ -19,9 +19,10 @@ export async function request(path, options = {}) {
 
   try {
     const response = await fetch(`${API_BASE}${path}`, {
-      headers,
-      signal: controller.signal,
       ...options,
+      headers,
+      credentials: 'include',
+      signal: controller.signal,
     })
 
     if (!response.ok) {

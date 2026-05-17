@@ -1,0 +1,95 @@
+package com.unbags.ordering.controller;
+
+import com.unbags.ordering.ai.rag.KnowledgeDocument;
+import com.unbags.ordering.ai.rag.KnowledgeIngestionService;
+import com.unbags.ordering.ai.rag.KnowledgeRefreshService;
+import com.unbags.ordering.dto.ApiResponse;
+import com.unbags.ordering.dto.KnowledgeUploadResult;
+import com.unbags.ordering.service.DocumentParsingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.*;
+
+@RestController
+@RequestMapping("/api/admin/knowledge")
+public class KnowledgeController {
+
+    private static final Logger log = LoggerFactory.getLogger(KnowledgeController.class);
+
+    private final DocumentParsingService parsingService;
+    private final KnowledgeIngestionService ingestionService;
+    private final KnowledgeRefreshService refreshService;
+
+    public KnowledgeController(DocumentParsingService parsingService,
+                               KnowledgeIngestionService ingestionService) {
+        this(parsingService, ingestionService, null);
+    }
+
+    @Autowired
+    public KnowledgeController(DocumentParsingService parsingService,
+                               KnowledgeIngestionService ingestionService,
+                               KnowledgeRefreshService refreshService) {
+        this.parsingService = parsingService;
+        this.ingestionService = ingestionService;
+        this.refreshService = refreshService;
+    }
+
+    @PostMapping("/upload")
+    public ApiResponse<List<KnowledgeUploadResult>> upload(
+            @RequestParam("files") List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            return ApiResponse.success("未选择文件", List.of());
+        }
+
+        List<KnowledgeUploadResult> results = new ArrayList<>();
+        if (!ingestionService.isAvailable()) {
+            for (MultipartFile file : files) {
+                results.add(KnowledgeUploadResult.failure(originalFilename(file), fileType(file),
+                    KnowledgeIngestionService.VECTOR_STORE_UNAVAILABLE_MESSAGE));
+            }
+            return ApiResponse.success("上传处理完成", results);
+        }
+
+        for (MultipartFile file : files) {
+            String filename = originalFilename(file);
+            String fileType = fileType(file);
+            try {
+                parsingService.validate(file);
+                List<KnowledgeDocument> chunks = parsingService.parse(file);
+                ingestionService.ingest(chunks);
+                results.add(KnowledgeUploadResult.success(filename, fileType, chunks.size()));
+                log.info("Knowledge file ingested: {} ({} chunks)", filename, chunks.size());
+            } catch (Exception e) {
+                log.error("Failed to ingest file: {}", filename, e);
+                results.add(KnowledgeUploadResult.failure(filename, fileType, e.getMessage()));
+            }
+        }
+        return ApiResponse.success("上传处理完成", results);
+    }
+
+    @PostMapping("/rebuild")
+    public ApiResponse<KnowledgeRefreshService.RefreshResult> rebuild() {
+        if (refreshService == null) {
+            throw new IllegalStateException("知识库刷新服务不可用");
+        }
+        KnowledgeRefreshService.RefreshResult result = refreshService.refreshAllKnowledge();
+        return ApiResponse.success(result.message(), result);
+    }
+
+    private String originalFilename(MultipartFile file) {
+        String filename = file == null ? null : file.getOriginalFilename();
+        return filename == null || filename.trim().isEmpty() ? "unknown" : filename;
+    }
+
+    private String fileType(MultipartFile file) {
+        String filename = originalFilename(file);
+        if (filename.contains(".")) {
+            return filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+        }
+        return "unknown";
+    }
+}

@@ -6,6 +6,7 @@
 
 # Maven
 target/
+backend/target/
 *.class
 *.jar
 *.war
@@ -17,6 +18,7 @@ dist/
 
 # Runtime
 tomcat/
+backend/tomcat/
 *.log
 logs/
 
