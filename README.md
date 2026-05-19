@@ -5,7 +5,7 @@
 ## 项目结构
 
 ```text
-MuFeng/
+MuFon/
 ├── backend/          # Spring Boot 后端服务，REST API、认证、缓存、WebSocket、AI
 ├── frontend/         # Vue 3 店员管理端，登录、点餐工作台、数据看板、商品管理、知识库
 ├── metaFront/        # Vue 3 顾客端，菜单浏览、购物车、在线下单、订单跟踪、AI 客服

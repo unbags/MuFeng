@@ -14,7 +14,7 @@
     <groupId>com.unbags</groupId>
     <artifactId>backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>ordering-backend</name>
+    <name>backend</name>
     <description>Ordering backend for the Vue frontend</description>
 
     <properties>
